@@ -1,0 +1,7 @@
+=============== Jan 8, 2016 (CST) ===============
+23:30:59.645846 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+23:30:59.646120 db@open opening
+23:30:59.707607 db@janitor F·2 G·0
+23:30:59.707671 db@open done T·61.518264ms
+23:30:59.707702 db@close closing
+23:30:59.707796 db@close done T·77.768µs
