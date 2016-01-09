@@ -1,0 +1,24 @@
+.centertext {
+    text-align: center;
+}
+
+.row.equal {
+    display: table;
+}
+
+.row.equal [class*="col-"] {
+    float: none;
+    display: table-cell;
+    vertical-align: top;
+}
+
+.row.equal [class*="bottom"] {
+    float: none;
+    display: table-cell;
+    vertical-align: bottom;
+}
+
+.row.equal [class*="right"] {
+    float: right;
+    display: table-cell;
+}

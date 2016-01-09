@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <title>Game - Flagz</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/mystyle.css" rel="stylesheet">
+
+        <script src="../js/jquery-1.11.3.min.js"></script>
+        <script src="../js/bootstrap.min.js"></script>
+        <script src="../js/game.js"></script>
+
+	</head>
+	<body>
+
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">Flagz</a>
+                </div>
+                <div id="navbar" class="collapse navbar-collapse">
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#">{{ .Username }}</a>
+                        </li>
+                        <li>
+                            <a href="/game/exit">Exit game</a>
+                        </li>
+                        <li>
+                            <a href="/logout">Logout</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+    		<h1>Buscaminas</h1>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <h2 id="players" class="centertext"> </h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <h3 id="mines" class="centertext" style="color:#29ABE0; font-family:monospace"> </h3>
+                </div>
+            </div>
+            <div class="jumbotron">
+                <div class="row equal"> 
+                    <div class="col-lg-4">
+                        <ul class="list-group">
+                            <li id="rivalBlock" class="list-group-item">
+                                <h2 id="rivalUsername" style="color:#325D88"> </h2>
+                            </li>
+                            <li class="list-group-item">
+                                <h3 id="rivalScore" style="font-family:monospace"> </h2>
+                            </li>
+                        </ul> 
+                    </div>
+                    <div class="col-lg-4">
+                        <div id="board"> </div>
+                    </div>
+                    <div class="col-lg-4 col-lg-offset-3 bottom">
+                        <ul class="list-group">
+                            <li id="myBlock" class="list-group-item">
+                                <h2 id="myUsername" style="color:#325D88"> </h2>
+                            </li>
+                            <li class="list-group-item">
+                                <h3 id="myScore" style="font-family:monospace"> </h2>
+                            </li>
+                        </ul>    
+                    </div>
+                </div>
+            </div>
+
+            <p id="winner"> </p>
+        </div>
+
+	</body>
+</html>
