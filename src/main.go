@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 
-	"buscaminas2p"
+	"github.com/buscaminas/src/buscaminas2p"
 )
 
 var (

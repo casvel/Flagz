@@ -1,10 +1,11 @@
 =============== Jan 8, 2016 (CST) ===============
-17:57:17.525120 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
-17:57:17.525258 db@open opening
-17:57:17.525304 journal@recovery F·1
-17:57:17.527040 journal@recovery recovering @7
-17:57:17.640914 memdb@flush created L0@9 N·1 S·280B "htt..ata,v3":"htt..ata,v3"
-17:57:17.642433 db@janitor F·4 G·0
-17:57:17.642464 db@open done T·117.193386ms
-17:57:17.642560 db@close closing
-17:57:17.643458 db@close done T·895.799µs
+18:43:57.223300 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+18:43:57.223447 db@open opening
+18:43:57.223525 journal@recovery F·1
+18:43:57.225055 journal@recovery recovering @23
+18:43:57.227124 db@janitor F·7 G·0
+18:43:57.227148 db@open done T·3.690612ms
+18:43:57.227208 table@compaction L0·5 -> L1·0 S·1KiB Q·10
+18:43:57.227224 db@close closing
+18:43:57.227228 table@build exiting
+18:43:57.227254 db@close done T·28.163µs
