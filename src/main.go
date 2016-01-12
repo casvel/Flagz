@@ -5,40 +5,54 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"os"
 	"encoding/json"
 	"strings"
 	"strconv"
+	"time"
 
 	"github.com/apexskier/httpauth"
-	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/flagz/src/buscaminas2p"
 )
 
+type myHandler struct {}
+
+type myMux map[string]map[string]func(http.ResponseWriter, *http.Request)
+
+func (m *myMux) addRoute(path string, f func(http.ResponseWriter, *http.Request), methods []string) {
+
+	for i := range methods {
+		_, ok := (*m)[methods[i]]
+		if ok == false {
+			(*m)[methods[i]] = make(map[string]func(http.ResponseWriter, *http.Request))
+		}
+		(*m)[methods[i]][path] = f
+	}
+}
+
 var (
 
-	backend     httpauth.LeveldbAuthBackend
+	backend     httpauth.SqlAuthBackend
 	aaa         httpauth.Authorizer
 	roles       map[string]httpauth.Role
 	port        = 8009
-	backendfile = "auth.leveldb.buscaminas"
+	backenddb   = "david:david123@tcp(127.0.0.1:3306)/flagz?parseTime=true"
 
 	games     map[string]*buscaminas2p.Buscaminas
 	players   map[int][2]string       
 	idGame    int = 0
-
+	
+	mux       myMux
+	filehttp  = http.NewServeMux()
 )
 
 func main() {
 
 	var err error
-	os.Mkdir(backendfile, 0755)
-	defer os.Remove(backendfile)
 
 	// create the backend
-	backend, err = httpauth.NewLeveldbAuthBackend(backendfile)
+	backend, err = httpauth.NewSqlAuthBackend("mysql", backenddb)
 	if err != nil {
 		panic(err)
 	}
@@ -63,53 +77,68 @@ func main() {
 		panic(err)
 	}
 
-	r := mux.NewRouter()
-	r.HandleFunc("/", handlePage)
-	r.HandleFunc("/login", getLogin).Methods("GET")
-	r.HandleFunc("/login", postLogin).Methods("POST")
-	r.HandleFunc("/register", postRegister).Methods("POST")
-	r.HandleFunc("/logout", handleLogout)
 
-	r.HandleFunc("/lobby", handleLobby).Methods("POST")
+	mux = make(map[string]map[string]func(http.ResponseWriter, *http.Request))
+	
+	mux.addRoute("/", handleHome, []string{"GET", "POST"})
 
-	r.HandleFunc("/game/move", handleGameMove).Methods("POST")
-	r.HandleFunc("/game/init", handleGameInit).Methods("POST")
-	r.HandleFunc("/game/newGame", handleGameNewGame)
-	r.HandleFunc("/game/joinGame", handleGameJoinGame)
-	r.HandleFunc("/game/exit", handleGameExit)
+	mux.addRoute("/login", getLogin, []string{"GET"})
+	mux.addRoute("/login", postLogin, []string{"POST"})
+	mux.addRoute("/register", postRegister, []string{"POST"})
+	mux.addRoute("/logout", handleLogout, []string{"GET", "POST"})
 
-	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("../images/"))))
-	http.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.Dir("../js/"))))
-	http.Handle("/fonts/", http.StripPrefix("/fonts/", http.FileServer(http.Dir("../fonts/"))))
-	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("../css/"))))
-	http.Handle("/", r)
+	mux.addRoute("/lobby", handleLobby, []string{"GET", "POST"})
+	mux.addRoute("/lobby/games", handleLobbyGames, []string{"GET", "POST"})
+
+	mux.addRoute("/game", handleGame, []string{"GET", "POST"})
+	mux.addRoute("/game/move", handleGameMove, []string{"GET", "POST"})
+	mux.addRoute("/game/data", handleGameData, []string{"GET", "POST"})
+	mux.addRoute("/game/joinGame", handleGameJoinGame, []string{"GET", "POST"})
+	mux.addRoute("/game/exit", handleGameExit, []string{"GET", "POST"})
+
+	filehttp.Handle("/", http.FileServer(http.Dir("../")))
 
 	fmt.Printf("Server running on port %d\n", port)
-	http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+
+	var mh *myHandler
+	http.ListenAndServe(fmt.Sprintf(":%d", port), mh)
 }
 
+func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
-func handlePage(rw http.ResponseWriter, req *http.Request) {
+	//fmt.Println(req.URL.Path, req.Method)
+
+	if (strings.Contains(req.URL.Path, ".")) {
+		filehttp.ServeHTTP(rw, req)
+	}
+
+	if f, ok := mux[req.Method][req.URL.Path]; ok {
+
+		user, err := aaa.CurrentUser(rw, req)
+		if err != nil && req.URL.Path != "/login" && req.URL.Path != "/register" {
+
+			http.Redirect(rw, req, "/login", http.StatusSeeOther)
+		} else {
+
+			if (err == nil) {
+				lastTime, _  := backend.GetLastSeen(user.Username)
+
+				duration := time.Since(lastTime)
+				fmt.Println(time.Now(), lastTime, duration.String())
+			}
+
+			f(rw, req)
+		}
+	}
+}
+
+func handleHome(rw http.ResponseWriter, req *http.Request) {
 
 	if err := aaa.Authorize(rw, req, true); err != nil {
-		fmt.Println(err)
 		http.Redirect(rw, req, "/login", http.StatusSeeOther)
-		return
-	}
-
-	if user, err := aaa.CurrentUser(rw, req); err == nil {
-
-		t, err := template.ParseFiles("../views/lobby.html")
-		if err != nil {
-			panic (err)
-		}
-
-		t.Execute(rw, user)
-
 	} else {
-		panic(err)
+		http.Redirect(rw, req, "/lobby", http.StatusSeeOther)
 	}
-
 }
 
 /******************************/
@@ -117,6 +146,17 @@ func handlePage(rw http.ResponseWriter, req *http.Request) {
 /******************************/
 
 func handleLobby(rw http.ResponseWriter, req *http.Request) {
+
+	user, _ := aaa.CurrentUser(rw, req)
+	t, err  := template.ParseFiles("../views/lobby.html")
+	if err != nil {
+		panic (err)
+	}
+	t.Execute(rw, user)
+
+}
+
+func handleLobbyGames(rw http.ResponseWriter, req *http.Request) {
 	
 
 	type myResp struct {
@@ -137,8 +177,6 @@ func handleLobby(rw http.ResponseWriter, req *http.Request) {
 		resp[i] = myResp{GameId:gameId, Joinable:joinable, Players:usernames}
 		i++
 	}
-
-	fmt.Println(resp)
 
 	respJson, _ := json.Marshal(resp)
 	fmt.Fprint(rw, string(respJson))
@@ -209,10 +247,10 @@ func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
 	players[gameId] = thisGame.Players
 
 	games[user.Username] = thisGame
-	http.Redirect(rw, req, "/game/newGame", http.StatusSeeOther)
+	http.Redirect(rw, req, "/game", http.StatusSeeOther)
 }
 
-func handleGameNewGame(rw http.ResponseWriter, req *http.Request) {
+func handleGame(rw http.ResponseWriter, req *http.Request) {
 
 	user, err := aaa.CurrentUser(rw, req)
 	if (err != nil) {
@@ -271,7 +309,7 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(rw, string(respJson))
 }
 
-func handleGameInit(rw http.ResponseWriter, req *http.Request) {
+func handleGameData(rw http.ResponseWriter, req *http.Request) {
 
 	user, err := aaa.CurrentUser(rw, req)
 	if err != nil {
@@ -283,7 +321,7 @@ func handleGameInit(rw http.ResponseWriter, req *http.Request) {
 	board      := thisGame.Board
 	stateBoard := thisGame.StateBoard
 	r, c       := thisGame.R, thisGame.C
-	turn     := thisGame.Turn
+	turn       := thisGame.Turn
 	score      := thisGame.Score
 	minesLeft  := thisGame.MinesLeft
 	players    := thisGame.Players
@@ -315,7 +353,8 @@ func handleGameInit(rw http.ResponseWriter, req *http.Request) {
 func getLogin(rw http.ResponseWriter, req *http.Request) {
 
 	if _, err := aaa.CurrentUser(rw, req); err == nil {
-		http.Redirect(rw, req, "/", http.StatusSeeOther)
+		http.Redirect(rw, req, "/lobby", http.StatusSeeOther)
+		return
 	}
 
 	messages := aaa.Messages(rw, req)
@@ -330,11 +369,17 @@ func getLogin(rw http.ResponseWriter, req *http.Request) {
 func postLogin(rw http.ResponseWriter, req *http.Request) {
 	username := req.PostFormValue("username")
 	password := req.PostFormValue("password")
-	if err := aaa.Login(rw, req, username, password, "/"); err != nil && err.Error() == "already authenticated" {
-		http.Redirect(rw, req, "/", http.StatusSeeOther)
-	} else if err != nil {
-		fmt.Println(err)
+	err := aaa.Login(rw, req, username, password, "/lobby")
+
+	if err != nil && err.Error() == "already authenticated" {
 		http.Redirect(rw, req, "/login", http.StatusSeeOther)
+	} else if err != nil {
+		http.Redirect(rw, req, "/login", http.StatusSeeOther)
+	} else {
+		err = backend.UpdateLastSeen(username)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -344,9 +389,9 @@ func postRegister(rw http.ResponseWriter, req *http.Request) {
 	user.Email = req.PostFormValue("email")
 	password := req.PostFormValue("password")
 	if err := aaa.Register(rw, req, user, password); err == nil {
-		getLogin(rw, req)
+		http.Redirect(rw, req, "/login?success=1", http.StatusSeeOther)
 	} else {
-		http.Redirect(rw, req, "/login", http.StatusSeeOther)
+		http.Redirect(rw, req, "/login?success=0", http.StatusSeeOther)
 	}
 }
 
@@ -361,5 +406,5 @@ func handleLogout(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	http.Redirect(rw, req, "/", http.StatusSeeOther)
+	http.Redirect(rw, req, "/login", http.StatusSeeOther)
 }

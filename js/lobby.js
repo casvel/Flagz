@@ -2,12 +2,14 @@ $(document).ready(function(){
 
 	var oldURL = document.referrer;
 
-	if (oldURL.split("/").pop() != "login")
+	if (oldURL.split("/").pop().indexOf("login") == -1)
 		$("#successLogin").alert('close');
-
-	$(".alert-dismissible").fadeTo(2000, 500).slideUp(500, function(){
-    	$(this).alert('close');
-	});
+	else
+	{
+		$("#successLogin").fadeTo(2000, 500).slideUp(500, function(){
+    		$(this).alert('close');
+		});
+	}
 
 	UpdateLobby();
 	var myInterval = setInterval(UpdateLobby, 5000);
@@ -15,14 +17,14 @@ $(document).ready(function(){
 	function UpdateLobby()
 	{
 		$.ajax({
-			url: "/lobby",
+			url: "/lobby/games",
 			type: "POST",
 			async: false
 		}).done(function(resp)
 		{
 			resp = JSON.parse(resp);
 
-			console.log(resp);
+			//console.log(resp);
 
 			var myList = "";
 			for (var i = 0; i < resp.length; i++)

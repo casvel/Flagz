@@ -62,13 +62,13 @@ $('document').ready(function()
 		}
 
 		$.ajax({
-			url: "/game/init", 
+			url: "/game/data", 
 			type: "POST",
 			async: false
 		}).done(function(resp)
 		{	
 			resp = JSON.parse(resp);
-			console.log(resp);
+			//console.log(resp);
 			
 			r = resp.R;
 			c = resp.C;
@@ -114,13 +114,13 @@ $('document').ready(function()
 	function initBoard()
 	{
 		$.ajax({
-			url: "/game/init", 
+			url: "/game/data", 
 			type: "POST",
 			async: false
 		}).done(function(resp)
 		{	
 			resp = JSON.parse(resp);
-			console.log(resp);
+			//console.log(resp);
 			
 			r = resp.R;
 			c = resp.C;
