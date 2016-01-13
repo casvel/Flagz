@@ -10,6 +10,7 @@ You will need the next packages:
 
  - `go get github.com/gorilla/mux`
  
+ - `go get github.com/go-sql-driver/mysql`
  - `go get github.com/apexskier/httpauth`. I changed some things here: 
    - Comment line 137-140. 
    - You must replace the file `github.com/apexskier/httpauth/sqlBackend.go` with `github.com/flagz/src/sqlBackend/sqlBackend.go`
