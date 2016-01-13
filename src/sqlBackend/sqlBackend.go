@@ -13,10 +13,11 @@ import (
 
 // PlayerData represents a sinple player
 type PlayerData struct {
-	Username    string `json:"Username"`
-	Logged      bool   `json:"Logged"`
-	GamesPlayed int    `json:"GamesPLayed"`
-	GamesWon    int    `json:"GamesWon"`
+	Username    string    `json:"Username"`
+	Logged      bool      `json:"Logged"`
+	GamesPlayed int       `json:"GamesPLayed"`
+	GamesWon    int       `json:"GamesWon"`
+	LastSeen    time.Time `json:"LastSeen"`
 }
 
 // SqlAuthBackend database and database connection information.
@@ -39,6 +40,7 @@ type SqlAuthBackend struct {
 	deletePlayerStmt *sql.Stmt
 	updateLastSeenPlayerStmt *sql.Stmt
 	lastSeenPlayerStmt *sql.Stmt
+	updateLoggedPLayerStmt *sql.Stmt
 }
 
 func mksqlerror(msg string) error {
@@ -149,31 +151,35 @@ func NewSqlAuthBackend(driverName, dataSourceName string) (b SqlAuthBackend, e e
 		/**** Player Statements ****/
 		b.playerStmt, err = db.Prepare(`select Username, Logged, GamesPlayed, GamesWon, LastSeen from player where Username = ?`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("playerstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("playerStmt: %v", err))
 		}
 		b.playersStmt, err = db.Prepare(`select Username, Logged, GamesPlayed, GamesWon, LastSeen from player`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("playersstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("playersStmt: %v", err))
 		}
 		b.insertPlayerStmt, err = db.Prepare(`insert into player (Username, Logged, GamesPlayed, GamesWon) values (?, ?, ?, ?)`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("insertPlayerstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("insertPlayerStmt: %v", err))
 		}
 		b.updatePlayerStmt, err = db.Prepare(`update player set Username = ?, Logged = ?, GamesPlayed = ?, GamesWon = ?`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("updatePlayerstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("updatePlayerStmt: %v", err))
 		}
 		b.deletePlayerStmt, err = db.Prepare(`delete from player where Username = ?`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("deletePlayerstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("deletePlayerStmt: %v", err))
 		}
 		b.updateLastSeenPlayerStmt, err = db.Prepare(`update player set LastSeen = NOW() where Username = ?`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("updateLastSeenPlayerstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("updateLastSeenPlayerStmt: %v", err))
 		}
 		b.lastSeenPlayerStmt, err = db.Prepare(`select LastSeen from player where Username = ?`)
 		if err != nil {
-			return b, mksqlerror(fmt.Sprintf("lastSeenPlayerstmt: %v", err))
+			return b, mksqlerror(fmt.Sprintf("lastSeenPlayerStmt: %v", err))
+		}
+		b.updateLoggedPLayerStmt, err = db.Prepare(`update player set Logged = ? where Username = ?`)
+		if err != nil {
+			return b, mksqlerror(fmt.Sprintf("updateLoggedPLayerStmt: %v", err))
 		}
 	}
 
@@ -223,7 +229,7 @@ func (b SqlAuthBackend) SaveUser(user UserData) (err error) {
 		_, err = b.updateStmt.Exec(user.Email, user.Hash, user.Role, user.Username)
 	} else {
 		_, err = b.insertStmt.Exec(user.Username, user.Email, user.Hash, user.Role)
-		err = b.SavePlayer(PlayerData{user.Username, false, 0, 0})
+		err = b.SavePlayer(PlayerData{user.Username, false, 0, 0, time.Now()})
 	}
 	return
 }
@@ -253,7 +259,7 @@ func (b SqlAuthBackend) Player(username string) (PlayerData, error) {
 	var player PlayerData
 
 	row := b.playerStmt.QueryRow(username)
-	err := row.Scan(&player.Logged, &player.GamesPlayed, &player.GamesWon)
+	err := row.Scan(&player.Logged, &player.GamesPlayed, &player.GamesWon, &player.LastSeen)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return player, ErrMissingUser
@@ -277,14 +283,15 @@ func (b SqlAuthBackend) Players() ([]PlayerData, error) {
 		username string
 		logged   bool
 		gamesPlayed, gamesWon int
+		lastSeen time.Time
 	)
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&username, &logged, &gamesPlayed, &gamesWon)
+		err = rows.Scan(&username, &logged, &gamesPlayed, &gamesWon, &lastSeen)
 		if err != nil {
 			return players, mksqlerror(err.Error())
 		}
-		players = append(players, PlayerData{username, logged, gamesPlayed, gamesWon})
+		players = append(players, PlayerData{username, logged, gamesPlayed, gamesWon, lastSeen})
 	}
 	return players, nil
 }
@@ -334,6 +341,11 @@ func (b SqlAuthBackend) GetLastSeen(username string) (time.Time, error) {
 	return time, nil
 }
 
+func (b SqlAuthBackend) UpdateLogged(val bool, username string) error {
+	_, err := b.updateLoggedPLayerStmt.Exec(val, username)
+	return err;
+}
+
 // Close cleans up the backend by terminating the database connection.
 func (b SqlAuthBackend) Close() {
 	b.db.Close()
@@ -348,4 +360,7 @@ func (b SqlAuthBackend) Close() {
 	b.insertPlayerStmt.Close()
 	b.updatePlayerStmt.Close()
 	b.deletePlayerStmt.Close()
+	b.updateLastSeenPlayerStmt.Close()
+	b.lastSeenPlayerStmt.Close()
+	b.updateLoggedPLayerStmt.Close()
 }
