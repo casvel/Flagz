@@ -11,6 +11,14 @@ import (
 	
 )
 
+// PlayerData represents a sinple player
+type PlayerData struct {
+	Username    string `json:"Username"`
+	Logged      bool   `json:"Logged"`
+	GamesPlayed int    `json:"GamesPLayed"`
+	GamesWon    int    `json:"GamesWon"`
+}
+
 // SqlAuthBackend database and database connection information.
 type SqlAuthBackend struct {
 	driverName     string
