@@ -18,8 +18,7 @@ $(document).ready(function(){
 	{
 		$.ajax({
 			url: "/lobby/games",
-			type: "POST",
-			async: false
+			type: "POST"
 		}).done(function(resp)
 		{
 			resp = JSON.parse(resp);
@@ -40,6 +39,25 @@ $(document).ready(function(){
 
 			$("#listGames").html(myList);
 		});
+
+		$.ajax({
+			url: "/lobby/players",
+			type: "POST"
+		}).done(function(resp)
+		{
+			resp = JSON.parse(resp);
+
+			var myList = "";
+			for (var i = 0; i < resp.length; i++)
+			{
+				myList += "<tr class='info'>";
+				myList += "<td>"+resp[i].Username+"</td>";
+				myList += "</tr>";
+			}
+
+			$("#listPlayers").html(myList);
+		});
 	}
+
 
 });

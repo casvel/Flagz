@@ -56,6 +56,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer backend.Close()
 
 	games     = make(map[string]*buscaminas2p.Buscaminas)
 	players   = make(map[int][2]string)
@@ -78,8 +79,10 @@ func main() {
 	}
 
 
+	// Handles
 	mux = make(map[string]map[string]func(http.ResponseWriter, *http.Request))
 	
+	// addRoute(route, handleFunction, methods)
 	mux.addRoute("/", handleHome, []string{"GET", "POST"})
 
 	mux.addRoute("/login", getLogin, []string{"GET"})
@@ -89,6 +92,7 @@ func main() {
 
 	mux.addRoute("/lobby", handleLobby, []string{"GET", "POST"})
 	mux.addRoute("/lobby/games", handleLobbyGames, []string{"GET", "POST"})
+	mux.addRoute("/lobby/players", handleLobbyPlayers, []string{"GET", "POST"})
 
 	mux.addRoute("/game", handleGame, []string{"GET", "POST"})
 	mux.addRoute("/game/move", handleGameMove, []string{"GET", "POST"})
@@ -124,7 +128,6 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				lastTime, _  := backend.GetLastSeen(user.Username)
 
 				duration := time.Since(lastTime)
-				fmt.Println(time.Now(), lastTime, duration.Minutes())
 			
 				if duration.Minutes() > 5 {
 					handleLogout(rw, req)
@@ -183,6 +186,24 @@ func handleLobbyGames(rw http.ResponseWriter, req *http.Request) {
 		}
 		resp[i] = myResp{GameId:gameId, Joinable:joinable, Players:usernames}
 		i++
+	}
+
+	respJson, _ := json.Marshal(resp)
+	fmt.Fprint(rw, string(respJson))
+}
+
+func handleLobbyPlayers(rw http.ResponseWriter, req *http.Request) {
+
+	type myResp struct {
+		Username string
+	}
+
+	var resp []myResp
+	p, _ := backend.Players()
+	for i := range p {
+		if p[i].Logged {
+			resp = append(resp, myResp{Username:p[i].Username})
+		}
 	}
 
 	respJson, _ := json.Marshal(resp)
@@ -387,6 +408,10 @@ func postLogin(rw http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			panic(err)
 		}
+		err = backend.UpdateLogged(true, username)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -413,5 +438,6 @@ func handleLogout(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	backend.UpdateLogged(false, user.Username)
 	http.Redirect(rw, req, "/login", http.StatusSeeOther)
 }
