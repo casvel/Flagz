@@ -37,7 +37,7 @@ var (
 	aaa         httpauth.Authorizer
 	roles       map[string]httpauth.Role
 	port        = 8009
-	backenddb   = "david:david123@tcp(127.0.0.1:3306)/flagz?parseTime=true"
+	backenddb   = "david:david123@tcp(127.0.0.1:3306)/flagz?parseTime=true&loc=Local"
 
 	games     map[string]*buscaminas2p.Buscaminas
 	players   map[int][2]string       
@@ -124,7 +124,14 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				lastTime, _  := backend.GetLastSeen(user.Username)
 
 				duration := time.Since(lastTime)
-				fmt.Println(time.Now(), lastTime, duration.String())
+				fmt.Println(time.Now(), lastTime, duration.Minutes())
+			
+				if duration.Minutes() > 5 {
+					handleLogout(rw, req)
+					return
+				} else {
+					backend.UpdateLastSeen(user.Username)
+				}
 			}
 
 			f(rw, req)
