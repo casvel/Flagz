@@ -105,7 +105,23 @@ func main() {
 	fmt.Printf("Server running on port %d\n", port)
 
 	var mh *myHandler
+	go CleanLoggedUsers()
 	http.ListenAndServe(fmt.Sprintf(":%d", port), mh)
+}
+
+func CleanLoggedUsers() {
+	for ;; {
+		time.Sleep(3*1000*1000*10)
+		players, _ := backend.Players()
+		for i := range players {
+
+			duration := time.Since(players[i].LastSeen)
+			
+			if duration.Seconds() > 30 {
+				backend.UpdateLogged(false, players[i].Username)
+			}
+		}
+	}
 }
 
 func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -133,6 +149,7 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 					handleLogout(rw, req)
 					return
 				} else {
+					backend.UpdateLogged(true, user.Username)
 					backend.UpdateLastSeen(user.Username)
 				}
 			}
@@ -313,11 +330,6 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 
 	//fmt.Println(req.FormValue("move"))
 
-	w    := strings.Split(req.FormValue("move"), "_")
-	x, _ := strconv.Atoi(w[0])
-	y, _ := strconv.Atoi(w[1])
-	fmt.Println(x, y)
-
 	user, err := aaa.CurrentUser(rw, req)
 	if err != nil {
 		panic(err)
@@ -330,7 +342,16 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp := thisGame.Move(int16(x), int16(y))
+	var coord [][2]int16 = make([][2]int16, 0)
+	ids := strings.Split(req.FormValue("move"), ",")
+	for i := range ids {
+		id   := strings.Split(ids[i], "_")
+		x, _ := strconv.Atoi(id[0])
+		y, _ := strconv.Atoi(id[1])
+		coord = append(coord, [2]int16{int16(x), int16(y)})
+	}
+
+	resp := thisGame.Move(coord)
 	//games[user.Username].PrintStateBoard()
 
 	respJson, _ := json.Marshal(resp)

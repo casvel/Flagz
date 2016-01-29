@@ -112,13 +112,16 @@ func dfs(x, y int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
 	}
 }
 
-func (B *Buscaminas) Move(x, y int16) []Response {
+func (B *Buscaminas) Move(coord [][2]int16) []Response {
 
 	var n int16 = 0
 	var ph []Response = make([]Response, B.R*B.C)
 	var keep bool = false
 
-	dfs(x, y, B, ph, &n, &keep)
+	for i := range coord {
+		dfs(coord[i][0], coord[i][1], B, ph, &n, &keep)
+	}
+	
 	if keep == false {
 		if B.Turn == 0 {
 			B.Turn = 1

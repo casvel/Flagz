@@ -7,6 +7,9 @@ $('document').ready(function()
 	var mines;
 	var username;
 	var myPos, rivalPos;
+	var xhover = -10, yhover = -10;
+	var bombActive = false;
+	var dX = [0, 1, 1, 1, 0, -1, -1, -1], dY = [1, 1, 0, -1, -1, -1, 0, 1];
 
 	initBoard();
 
@@ -98,7 +101,36 @@ $('document').ready(function()
 							img = "" + resp.Board[i][j];
 					}
 					else
-						img = "hidden";
+					{
+						if (bombActive)
+						{
+							var hoverBomb = (i == xhover && j == yhover);
+
+							for (var k = 0; k < 8; ++k)
+							{
+								var x = xhover+dX[k];
+								var y = yhover+dY[k];
+						
+								if (x < 0 || y < 0 || x == r || y == c)
+									continue;
+						
+								if (x == i && y == j)
+									hoverBomb = true;
+							}
+
+							if (hoverBomb)
+								img = "hidden-hover";
+							else
+								img = "hidden";
+						}
+						else
+						{
+							if (xhover == i && yhover == j)
+								img = "hidden-hover";
+							else
+								img = "hidden";
+						}
+					}
 
 					$("#"+i+"_"+j).attr("src", "../images/"+img+".png");
 				}
@@ -169,15 +201,54 @@ $('document').ready(function()
 		});
 	}
 
+	$("#bomb").click(function(){
+		if ($(this).hasClass("active"))
+		{
+			bombActive = false;
+			$(this).trigger("blur");
+			$(this).removeClass("active");
+		}
+		else
+		{
+			bombActive = true;
+			$(this).trigger("blur");
+			$(this).addClass("active");
+		}
+	});
+
 	$("[name='cell']").click(function() 
 	{
 		if (mines == 0)
 			return;
 
+
+		var ids = $(this).attr("id");
+		if (bombActive)
+		{
+			var id = ids.split("_");
+			var xc = parseInt(id[0]);
+			var yc = parseInt(id[1]);
+
+			for (var k = 0; k < 8; ++k)
+			{
+				var x = xc + dX[k];
+				var y = yc + dY[k];
+
+				if (x < 0 || y < 0 || x == r || y == c)
+					continue;
+
+				ids += ","+x+"_"+y;
+			}
+
+			$("#bomb").addClass("disabled");
+			$("#bomb").removeClass("active");
+			bombActive = false;
+		}
+
 		$.ajax({
 			url: "/game/move",
 			type: "POST",
-			data: {move: $(this).attr("id")}
+			data: {move: ids}
 		}).done(function(resp) 
 		{
 			resp = JSON.parse(resp);
@@ -216,4 +287,54 @@ $('document').ready(function()
 			}
 		});
 	});
+
+	$("[name='cell']").hover(
+		function()
+		{
+			var id = $(this).attr("id").split("_");
+			xhover = parseInt(id[0]);
+			yhover = parseInt(id[1]);
+
+			if ($(this).attr("src") == "../images/hidden.png")
+				$(this).attr("src", "../images/hidden-hover.png");
+
+			if (bombActive)
+			{
+				for (var i = 0; i < 8; ++i)
+				{
+					var x = xhover + dX[i];
+					var y = yhover + dY[i];
+
+					if (x < 0 || y < 0 || x == r || y == c)
+						continue;
+
+					if ($("#"+x+"_"+y).attr("src") == "../images/hidden.png")
+						$("#"+x+"_"+y).attr("src", "../images/hidden-hover.png");
+				}
+			}
+		},
+		function()
+		{
+			if ($(this).attr("src") == "../images/hidden-hover.png")
+				$(this).attr("src", "../images/hidden.png");
+
+			if (bombActive)
+			{
+				for (var i = 0; i < 8; ++i)
+				{
+					var x = xhover + dX[i];
+					var y = yhover + dY[i];
+
+					if (x < 0 || y < 0 || x == r || y == c)
+						continue;
+
+					if ($("#"+x+"_"+y).attr("src") == "../images/hidden-hover.png")
+						$("#"+x+"_"+y).attr("src", "../images/hidden.png");
+				}
+			}
+
+			xhover = -10;
+			yhover = -10;
+		}
+	);
 });
