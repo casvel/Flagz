@@ -264,8 +264,6 @@ func handleGameExit(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	deletePlayerFromGame(user.Username)
-
-	http.Redirect(rw, req, "/", http.StatusSeeOther)	
 }
 
 func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
@@ -285,7 +283,7 @@ func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
 	} else if thisGame.Players[0] == "" {
 		thisGame.Players[0] = user.Username
 	} else {
-		fmt.Println("Ya tiene dos jugadores.");
+		fmt.Println("Already has two players.");
 		return
 	}
 
@@ -308,7 +306,7 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		if _, ok := games[user.Username]; ok == true {
-			fmt.Println("Ya está jugando.")
+			fmt.Println("It's playing already.")
 		} else {
 			var new_game buscaminas2p.Buscaminas
 
@@ -317,7 +315,7 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 			players[idGame] = [2]string{user.Username, ""}
 			idGame++
 			
-			fmt.Println("Juego creado.")
+			fmt.Println("Game created.")
 			games[user.Username].PrintBoard()
 		}
 
@@ -365,15 +363,21 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 
-	thisGame := games[user.Username]
+	if _, ok := games[user.Username]; ok == false {
+		fmt.Println("The user has no game.")
+		return
+	}
 
-	board      := thisGame.Board
-	stateBoard := thisGame.StateBoard
-	r, c       := thisGame.R, thisGame.C
-	turn       := thisGame.Turn
-	score      := thisGame.Score
-	minesLeft  := thisGame.MinesLeft
-	players    := thisGame.Players
+	thisGame     := games[user.Username]
+
+	board        := thisGame.Board
+	stateBoard   := thisGame.StateBoard
+	r, c         := thisGame.R, thisGame.C
+	turn         := thisGame.Turn
+	score        := thisGame.Score
+	minesLeft    := thisGame.MinesLeft
+	players      := thisGame.Players
+	lastX, lastY := thisGame.LastX, thisGame.LastY
 
 	type Response struct {
 
@@ -381,6 +385,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 		StateBoard [][]int16
 		Turn int16
 		R, C int16
+		LastX, LastY int16
 		Score [2]int16
 		Mines int16
 		Username string
@@ -389,7 +394,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 
 	resp := Response{Board:board, StateBoard:stateBoard, R:r, C:c, 
 					Turn:turn, Score:score, Mines:minesLeft, Username:user.Username, 
-					Players:players}
+					Players:players, LastX:lastX, LastY:lastY}
 	respJson, _ := json.Marshal(resp)
 
 	fmt.Fprint(rw, string(respJson))
