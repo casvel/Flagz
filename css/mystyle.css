@@ -15,10 +15,62 @@
 .row.equal [class*="bottom"] {
     float: none;
     display: table-cell;
-    vertical-align: bottom;
+    /*vertical-align: bottom; */
 }
 
 .row.equal [class*="right"] {
     float: right;
     display: table-cell;
+}
+
+.panel
+{
+    width: 25%;
+    position: fixed;
+    bottom: -20px;
+    right: 0;
+}
+
+.panel-heading
+{
+    cursor: pointer;
+    font-size: 1em;
+}
+
+.panel-body
+{
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.btn-xs
+{
+    height: 100%;
+    width: 100%;
+    line-height: 4;
+}
+
+.message
+{
+    bottom: 0;
+    position: absolute;
+    width: 87%;
+}
+
+.table
+{
+    margin-bottom: 0px;
+}
+
+.containerwell
+{
+    padding-bottom: 40px;
+    width: 100%;
+    word-wrap: break-word;
+}
+
+.well
+{
+    padding: 10px 0px 0px 15px;
+    margin-bottom: 15px;
 }

@@ -21,6 +21,21 @@ $('document').ready(function()
 			type: "POST",
 			async: false
 		});
+	});	
+
+	$('.panel-body').hide();
+	$('<h5>'+ players[1] + '</h5>').appendTo('.panel-heading');
+
+	$('.panel-heading').on('click', function()
+	{
+		$('.panel-body').toggle();
+	});
+
+	$('#sendMsg').on('click', function()
+	{
+		var msg = $('textarea').val();		
+		$('<div class="well"><p>' + msg + '</p></div>').appendTo('.containerwell');
+		$('textarea').val('');
 	});
 
 	function stringPlayers()
