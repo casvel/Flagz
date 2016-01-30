@@ -1,5 +1,6 @@
 $('document').ready(function()
 {
+	/***** Variables *****/
 	var r, c;
 	var turn;
 	var players = ["", ""];
@@ -10,9 +11,15 @@ $('document').ready(function()
 	var xhover = -10, yhover = -10;
 	var bombActive = false;
 	var dX = [0, 1, 1, 1, 0, -1, -1, -1], dY = [1, 1, 0, -1, -1, -1, 0, 1];
+	var myInterval = setInterval(updateBoard, 1000);
+	var lastX = -1, lastY = -1;
+	/***** END Variables *****/
 
+	/***** "main" *****/
 	initBoard();
+	/***** END "main" *****/
 
+<<<<<<< HEAD
 	var myInterval = setInterval(updateBoard, 1000); 
 
 	$(window).unload(function(){
@@ -38,6 +45,9 @@ $('document').ready(function()
 		$('textarea').val('');
 	});
 
+=======
+	/***** Auxiliar Functions *****/
+>>>>>>> upstream/master
 	function stringPlayers()
 	{
 		if (turn == 0)
@@ -53,6 +63,7 @@ $('document').ready(function()
 		$("#rivalScore").html("Score: "+score[rivalPos]);
 		$("#rivalUsername").html(players[rivalPos]);
 		$("#mines").html("Mines: <strong>"+mines+"</strong>");
+		$("#"+lastX+"_"+lastY).css({"border-style":"solid", "border-color":"#D9534F", "border-width":"2px"});
 
 		if (players[turn] == username)
 		{
@@ -81,13 +92,13 @@ $('document').ready(function()
 
 		$.ajax({
 			url: "/game/data", 
-			type: "POST",
-			async: false
+			type: "POST"
 		}).done(function(resp)
 		{	
 			resp = JSON.parse(resp);
 			//console.log(resp);
 			
+			$("#"+lastX+"_"+lastY).css("border-style","none");
 			r = resp.R;
 			c = resp.C;
 			turn = resp.Turn;
@@ -96,6 +107,8 @@ $('document').ready(function()
 			mines = resp.Mines;
 			username = resp.Username;
 			players = resp.Players
+			lastX = resp.LastX;
+			lastY = resp.LastY;
 
 			for (var i = 0; i < r; i++)
 			{
@@ -215,7 +228,10 @@ $('document').ready(function()
 			updateHTML();
 		});
 	}
+	/***** END Auxiliar Functions *****/
 
+	/***** Events *****/
+	// Activate bomb
 	$("#bomb").click(function(){
 		if ($(this).hasClass("active"))
 		{
@@ -231,6 +247,7 @@ $('document').ready(function()
 		}
 	});
 
+	// Click on some cell
 	$("[name='cell']").click(function() 
 	{
 		if (mines == 0)
@@ -238,9 +255,11 @@ $('document').ready(function()
 
 
 		var ids = $(this).attr("id");
+		var id  = ids.split("_");
+
 		if (bombActive)
 		{
-			var id = ids.split("_");
+			
 			var xc = parseInt(id[0]);
 			var yc = parseInt(id[1]);
 
@@ -270,6 +289,10 @@ $('document').ready(function()
 			
 			if (resp != null)
 			{
+				$("#"+lastX+"_"+lastY).css("border-style","none");
+				lastX = parseInt(id[0]);
+				lastY = parseInt(id[1]);
+
 				var keep = false;
 				for (var i = 0; i < resp.length; i++) 
 				{
@@ -294,15 +317,17 @@ $('document').ready(function()
 				}
 				else
 				{
-					updateHTML();
-
 					if (mines == 0)
 						$("#winner").html("Ganador: "+score[0]>score[1]?"Player 0":"Player 1");
 				}
+
+				updateHTML();
 			}
 		});
+
 	});
 
+	// Hover some cell
 	$("[name='cell']").hover(
 		function()
 		{
@@ -352,4 +377,14 @@ $('document').ready(function()
 			yhover = -10;
 		}
 	);
+
+	// Delete game when exit page
+	$(window).unload(function(){
+		$.ajax({
+			url: "/game/exit", 
+			type: "POST",
+			async: false
+		});
+	});
+	/***** END Events *****/
 });

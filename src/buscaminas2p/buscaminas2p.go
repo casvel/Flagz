@@ -12,6 +12,7 @@ type Buscaminas struct {
 
 	Board, StateBoard [][]int16
 	R, C int16
+	LastX, LastY int16
 	Turn int16
 	Players [2]string
 	MinesLeft int16
@@ -46,6 +47,7 @@ func (B *Buscaminas) Init(R, C, mines int16, username string, id int) {
     rnd  := rand.New(seed)
 
 	B.R, B.C = R, C
+	B.LastX, B.LastY = -1, -1
 	B.MinesLeft = mines
 	B.Id = id
 	B.Players = [2]string{username, ""}
@@ -129,6 +131,8 @@ func (B *Buscaminas) Move(coord [][2]int16) []Response {
 			B.Turn = 0
 		}
 	}
+
+	B.LastX, B.LastY = coord[0][0], coord[0][1]
 
 	return append([]Response(nil), ph[:n]...)
 }
