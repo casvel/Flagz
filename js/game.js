@@ -106,7 +106,12 @@ $('document').ready(function()
 	{
 
 		if (players[turn] == username && hasRival)
+		{
+			document.title = "Flagz - Your turn!";
 			return;
+		}
+
+		document.title = "Flagz - Game";
 
 		if (mines == 0)
 		{

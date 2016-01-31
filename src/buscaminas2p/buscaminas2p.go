@@ -99,7 +99,8 @@ func bfs(xs, ys int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
 
 	dX, dY := []int16{0, 1, 1, 1, 0, -1, -1, -1}, []int16{1, 1, 0, -1, -1, -1, 0, 1}
 
-	queue := make([][2]int16, 0)
+	queue := make([][2]int16, 0, B.R*B.C)
+	B.StateBoard[xs][ys] = B.Turn
 	queue  = append(queue, [2]int16{xs, ys})
 
 	for len(queue) != 0 {
@@ -109,7 +110,6 @@ func bfs(xs, ys int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
 		queue = queue[1:]
 
 		ph[*n] = Response{X: x, Y: y, Val: B.Board[x][y]}
-		B.StateBoard[x][y] = B.Turn
 		if B.Board[x][y] == -1 {
 			B.Score[B.Turn]++
 			B.MinesLeft--
@@ -125,6 +125,7 @@ func bfs(xs, ys int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
 					continue
 				}
 
+				B.StateBoard[nx][ny] = B.Turn
 				queue = append(queue, [2]int16{nx, ny})
 			}
 		}
