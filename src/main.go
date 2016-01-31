@@ -340,8 +340,10 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	usedBomb, _ := strconv.ParseBool(req.FormValue("usedBomb"))
+	ids         := strings.Split(req.FormValue("move"), ",")
+
 	var coord [][2]int16 = make([][2]int16, 0)
-	ids := strings.Split(req.FormValue("move"), ",")
 	for i := range ids {
 		id   := strings.Split(ids[i], "_")
 		x, _ := strconv.Atoi(id[0])
@@ -349,7 +351,7 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 		coord = append(coord, [2]int16{int16(x), int16(y)})
 	}
 
-	resp := thisGame.Move(coord)
+	resp := thisGame.Move(coord, usedBomb)
 	//games[user.Username].PrintStateBoard()
 
 	respJson, _ := json.Marshal(resp)
@@ -378,6 +380,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 	minesLeft    := thisGame.MinesLeft
 	players      := thisGame.Players
 	lastX, lastY := thisGame.LastX, thisGame.LastY
+	hasBomb      := thisGame.HasBomb
 
 	type Response struct {
 
@@ -390,11 +393,12 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 		Mines int16
 		Username string
 		Players [2]string
+		HasBomb [2]bool
 	}
 
 	resp := Response{Board:board, StateBoard:stateBoard, R:r, C:c, 
 					Turn:turn, Score:score, Mines:minesLeft, Username:user.Username, 
-					Players:players, LastX:lastX, LastY:lastY}
+					Players:players, LastX:lastX, LastY:lastY, HasBomb:hasBomb}
 	respJson, _ := json.Marshal(resp)
 
 	fmt.Fprint(rw, string(respJson))

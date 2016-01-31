@@ -17,6 +17,7 @@ type Buscaminas struct {
 	Players [2]string
 	MinesLeft int16
 	Score [2]int16
+	HasBomb [2]bool
 	Id int
 }
 
@@ -51,6 +52,7 @@ func (B *Buscaminas) Init(R, C, mines int16, username string, id int) {
 	B.MinesLeft = mines
 	B.Id = id
 	B.Players = [2]string{username, ""}
+	B.HasBomb = [2]bool{true, true}
 
 
 	B.Board = make([][]int16, R)
@@ -89,41 +91,60 @@ func (B *Buscaminas) Init(R, C, mines int16, username string, id int) {
 	}
 }
 
-func dfs(x, y int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
+func bfs(xs, ys int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
 
-	if x < 0 || x >= B.R || y < 0 || y >= B.C || B.StateBoard[x][y] != -1 {
-		return
-	}
-
-	ph[*n] = Response{X: x, Y: y, Val: B.Board[x][y]}
-	B.StateBoard[x][y] = B.Turn
-	if B.Board[x][y] == -1 {
-		B.Score[B.Turn]++
-		B.MinesLeft--
-		*keep = true
-	}
-	*n++
-
-	if B.Board[x][y] != 0 {
-		return
+	if B.StateBoard[xs][ys] != -1 {
+		return;
 	}
 
 	dX, dY := []int16{0, 1, 1, 1, 0, -1, -1, -1}, []int16{1, 1, 0, -1, -1, -1, 0, 1}
-	for i := 0; i < 8; i++ {
-		dfs(x+dX[i], y+dY[i], B, ph, n, keep)
+
+	queue := make([][2]int16, 0)
+	queue  = append(queue, [2]int16{xs, ys})
+
+	for len(queue) != 0 {
+
+		x := queue[0][0]
+		y := queue[0][1]
+		queue = queue[1:]
+
+		ph[*n] = Response{X: x, Y: y, Val: B.Board[x][y]}
+		B.StateBoard[x][y] = B.Turn
+		if B.Board[x][y] == -1 {
+			B.Score[B.Turn]++
+			B.MinesLeft--
+			*keep = true
+		}
+		*n++
+
+		if B.Board[x][y] == 0 {
+			for k := 0; k < 8; k++ {
+				nx, ny := x+dX[k], y+dY[k]
+
+				if nx < 0 || nx >= B.R || ny < 0 || ny >= B.C || B.StateBoard[nx][ny] != -1 {
+					continue
+				}
+
+				queue = append(queue, [2]int16{nx, ny})
+			}
+		}
 	}
 }
 
-func (B *Buscaminas) Move(coord [][2]int16) []Response {
+func (B *Buscaminas) Move(coord [][2]int16, usedBomb bool) []Response {
 
 	var n int16 = 0
 	var ph []Response = make([]Response, B.R*B.C)
 	var keep bool = false
 
 	for i := range coord {
-		dfs(coord[i][0], coord[i][1], B, ph, &n, &keep)
+		bfs(coord[i][0], coord[i][1], B, ph, &n, &keep)
 	}
 	
+	if usedBomb {
+		B.HasBomb[B.Turn] = false
+	}
+
 	if keep == false {
 		if B.Turn == 0 {
 			B.Turn = 1

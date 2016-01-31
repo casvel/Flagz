@@ -4,12 +4,13 @@ $('document').ready(function()
 	var r, c;
 	var turn;
 	var players = ["", ""];
+	var hasRival = false;
 	var score = [0, 0];
 	var mines;
 	var username;
 	var myPos, rivalPos;
 	var xhover = -10, yhover = -10;
-	var bombActive = false;
+	var bombActive = false, hasBomb = true, rivalHasBomb = true;
 	var dX = [0, 1, 1, 1, 0, -1, -1, -1], dY = [1, 1, 0, -1, -1, -1, 0, 1];
 	var myInterval = setInterval(updateBoard, 1000);
 	var lastX = -1, lastY = -1;
@@ -28,6 +29,45 @@ $('document').ready(function()
 			return players[0]+" vs <strong style='color:#D9534F'>"+players[1]+"</strong>";
 	}
 
+	function showEndModal()
+	{
+		if (score[myPos] > score[rivalPos])
+		{
+			$("#modal-end .modal-title").html("You Win!");
+			$("#modal-end .modal-body").html("<p><h4 style='text-align:center'> You're awesome! <br><br> <img src='../images/win-baby.jpg' align='middle' style='width:60%;height:50%'> </h4> </p>");
+		}
+		else
+		{
+			$("#modal-end .modal-title").html("You Lose!");
+			$("#modal-end .modal-body").html("<p><h4 style='text-align:center'> You suck! <br><br> <img src='../images/loser.jpg' align='middle' style='width:60%;height:50%'> </h4> </p>");
+		}
+
+		$("#modal-end").modal();
+	}
+
+	function updateVariables(resp)
+	{
+		// Esto tiene que ir antes de actualizar lastX y lastY.
+		$("#"+lastX+"_"+lastY).css("border-style","none");
+
+		r        = resp.R;
+		c        = resp.C;
+		turn     = resp.Turn;
+		score[0] = resp.Score[0];
+		score[1] = resp.Score[1];
+		mines    = resp.Mines;
+		username = resp.Username;
+		players  = resp.Players
+		
+		lastX = resp.LastX;
+		lastY = resp.LastY;
+
+		hasBomb      = resp.HasBomb[myPos];
+		rivalHasBomb = resp.HasBomb[rivalPos];
+
+		hasRival = (players[0] != "" && players[1] != "");
+	}
+
 	function updateHTML()
 	{
 		$("#players").html(stringPlayers());
@@ -36,6 +76,14 @@ $('document').ready(function()
 		$("#rivalUsername").html(players[rivalPos]);
 		$("#mines").html("Mines: <strong>"+mines+"</strong>");
 		$("#"+lastX+"_"+lastY).css({"border-style":"solid", "border-color":"#D9534F", "border-width":"2px"});
+		if (!hasBomb)
+		{
+			$("#myBomb").addClass("disabled");
+			$("#myBomb").removeClass("active");
+			$("#imgMyBomb").attr("src", "../images/bomb-disabled.png");
+		}
+		if (!rivalHasBomb)
+			$("#imgRivalBomb").attr("src", "../images/bomb-disabled.png");
 
 		if (players[turn] == username)
 		{
@@ -56,6 +104,10 @@ $('document').ready(function()
 
 	function updateBoard()
 	{
+
+		if (players[turn] == username && hasRival)
+			return;
+
 		if (mines == 0)
 		{
 			clearInterval(myInterval);
@@ -69,18 +121,8 @@ $('document').ready(function()
 		{	
 			resp = JSON.parse(resp);
 			//console.log(resp);
-			
-			$("#"+lastX+"_"+lastY).css("border-style","none");
-			r = resp.R;
-			c = resp.C;
-			turn = resp.Turn;
-			score[0] = resp.Score[0];
-			score[1] = resp.Score[1];
-			mines = resp.Mines;
-			username = resp.Username;
-			players = resp.Players
-			lastX = resp.LastX;
-			lastY = resp.LastY;
+
+			updateVariables(resp);
 
 			for (var i = 0; i < r; i++)
 			{
@@ -139,7 +181,7 @@ $('document').ready(function()
 			updateHTML();
 
 			if (mines == 0)
-				$("#winner").html("Ganador: "+score[0]>score[1]?"Player 0":"Player 1");
+				showEndModal();
 		});
 	}
 
@@ -154,16 +196,9 @@ $('document').ready(function()
 			resp = JSON.parse(resp);
 			//console.log(resp);
 			
-			r = resp.R;
-			c = resp.C;
-			turn = resp.Turn;
-			score[0] = resp.Score[0];
-			score[1] = resp.Score[1];
-			mines = resp.Mines;
-			username = resp.Username;
-			players = resp.Players;
 			myPos = (resp.Username == resp.Players[0] ? 0 : 1);
 			rivalPos = (myPos == 0 ? 1 : 0);
+			updateVariables(resp);
 
 			var mytable = "";
 			mytable += "<table cellspacing='0' cellpadding='0'>"
@@ -204,7 +239,8 @@ $('document').ready(function()
 
 	/***** Events *****/
 	// Activate bomb
-	$("#bomb").click(function(){
+	$("#myBomb").click(function(){
+
 		if ($(this).hasClass("active"))
 		{
 			bombActive = false;
@@ -222,12 +258,13 @@ $('document').ready(function()
 	// Click on some cell
 	$("[name='cell']").click(function() 
 	{
-		if (mines == 0)
+		if (mines == 0 || players[turn] != username)
 			return;
 
 
 		var ids = $(this).attr("id");
 		var id  = ids.split("_");
+		var ok  = ($(this).attr("src") == "../images/hidden-hover.png");
 
 		if (bombActive)
 		{
@@ -244,17 +281,18 @@ $('document').ready(function()
 					continue;
 
 				ids += ","+x+"_"+y;
+				if ($("#"+x+"_"+y).attr("src") == "../images/hidden-hover.png")
+					ok = true;
 			}
-
-			$("#bomb").addClass("disabled");
-			$("#bomb").removeClass("active");
-			bombActive = false;
 		}
+
+		if (!ok)
+			return;
 
 		$.ajax({
 			url: "/game/move",
 			type: "POST",
-			data: {move: ids}
+			data: {move: ids, usedBomb: bombActive}
 		}).done(function(resp) 
 		{
 			resp = JSON.parse(resp);
@@ -290,13 +328,17 @@ $('document').ready(function()
 				else
 				{
 					if (mines == 0)
-						$("#winner").html("Ganador: "+score[0]>score[1]?"Player 0":"Player 1");
+						showEndModal();
 				}
 
+				if (bombActive)
+				{	
+					bombActive = false;
+					hasBomb    = false;
+				}
 				updateHTML();
 			}
 		});
-
 	});
 
 	// Hover some cell
