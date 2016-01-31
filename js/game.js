@@ -19,7 +19,6 @@ $('document').ready(function()
 	initBoard();
 	/***** END "main" *****/
 
-<<<<<<< HEAD
 	var myInterval = setInterval(updateBoard, 1000); 
 
 	$(window).unload(function(){
@@ -45,9 +44,8 @@ $('document').ready(function()
 		$('textarea').val('');
 	});
 
-=======
+
 	/***** Auxiliar Functions *****/
->>>>>>> upstream/master
 	function stringPlayers()
 	{
 		if (turn == 0)
