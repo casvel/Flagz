@@ -2,7 +2,7 @@
 <html>
     <head>
 
-        <title>Game - Flagz</title>
+        <title>Flagz - Game</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/mystyle.css" rel="stylesheet">
 
@@ -52,7 +52,14 @@
                     <div class="col-lg-4">
                         <ul class="list-group">
                             <li id="rivalBlock" class="list-group-item">
-                                <h2 id="rivalUsername" style="color:#325D88"> </h2>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <h2 id="rivalUsername" style="color:#325D88"> </h2>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <a id="rivalBomb" href="#" class="btn btn-danger disabled"><img id="imgRivalBomb" src="../images/bomb.png" style="width:50px;height:45px"></a>
+                                    </div>
+                                </div>
                             </li>
                             <li class="list-group-item">
                                 <h3 id="rivalScore" style="font-family:monospace"> </h2>
@@ -70,7 +77,7 @@
                                         <h2 id="myUsername" style="color:#325D88"> </h2>
                                     </div>
                                     <div class="col-lg-6">
-                                        <a id="bomb" href="#" class="btn btn-danger"><img src="../images/bomb.png" style="width:50px;height:45px"></a>
+                                        <a id="myBomb" href="#" class="btn btn-danger"><img id="imgMyBomb" src="../images/bomb.png" style="width:50px;height:45px"></a>
                                     </div>
                                 </div>
                             </li>
@@ -81,8 +88,23 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <p id="winner"> </p>
+
+        <div class="modal fade" id="modal-end">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h2 class="modal-title"></h2>
+                    </div>
+                    <div class="modal-body">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="panel panel-success"> 
