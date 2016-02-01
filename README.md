@@ -2,7 +2,7 @@
 
 My first web project.
 
-A two players minesweeper game. Version 0.1.
+A two players minesweeper game. Version 1.0.
 
 Clone inside `github` in your `GOPATH`. Run `go run main.go` inside `github.com/flagz/src`.
 

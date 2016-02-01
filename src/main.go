@@ -326,8 +326,6 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 
 func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 
-	//fmt.Println(req.FormValue("move"))
-
 	user, err := aaa.CurrentUser(rw, req)
 	if err != nil {
 		panic(err)
@@ -335,27 +333,25 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 
 	thisGame := games[user.Username]
 
-	if thisGame.Players[thisGame.Turn] != user.Username {
-		fmt.Fprint(rw, "null")
-		return
+	req.ParseForm()
+
+	visited     := req.Form["visited[]"]
+	usedBomb, _ := strconv.ParseBool(req.Form["usedBomb"][0])
+	lastX, _    := strconv.Atoi(req.Form["lastX"][0])
+	lastY, _    := strconv.Atoi(req.Form["lastY"][0])
+
+	coord := make([][2]int16, 0, thisGame.R*thisGame.C)
+	for i := 0; i < len(visited); {
+
+		sx, sy := visited[i], visited[i+1]
+		ix, _  := strconv.Atoi(sx)
+		iy, _  := strconv.Atoi(sy)
+		coord = append(coord, [2]int16{int16(ix), int16(iy)})
+
+		i += 2
 	}
 
-	usedBomb, _ := strconv.ParseBool(req.FormValue("usedBomb"))
-	ids         := strings.Split(req.FormValue("move"), ",")
-
-	var coord [][2]int16 = make([][2]int16, 0)
-	for i := range ids {
-		id   := strings.Split(ids[i], "_")
-		x, _ := strconv.Atoi(id[0])
-		y, _ := strconv.Atoi(id[1])
-		coord = append(coord, [2]int16{int16(x), int16(y)})
-	}
-
-	resp := thisGame.Move(coord, usedBomb)
-	//games[user.Username].PrintStateBoard()
-
-	respJson, _ := json.Marshal(resp)
-	fmt.Fprint(rw, string(respJson))
+	thisGame.Move(coord, usedBomb, int16(lastX), int16(lastY))
 }
 
 func handleGameData(rw http.ResponseWriter, req *http.Request) {
@@ -372,7 +368,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 
 	thisGame     := games[user.Username]
 
-	board        := thisGame.Board
+	/*board        := thisGame.Board
 	stateBoard   := thisGame.StateBoard
 	r, c         := thisGame.R, thisGame.C
 	turn         := thisGame.Turn
@@ -380,11 +376,11 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 	minesLeft    := thisGame.MinesLeft
 	players      := thisGame.Players
 	lastX, lastY := thisGame.LastX, thisGame.LastY
-	hasBomb      := thisGame.HasBomb
+	hasBomb      := thisGame.HasBomb*/
 
 	type Response struct {
 
-		Board [][]int16
+		/*Board [][]int16
 		StateBoard [][]int16
 		Turn int16
 		R, C int16
@@ -393,12 +389,13 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 		Mines int16
 		Username string
 		Players [2]string
-		HasBomb [2]bool
+		HasBomb [2]bool*/
+
+		Game buscaminas2p.Buscaminas
+		Username string
 	}
 
-	resp := Response{Board:board, StateBoard:stateBoard, R:r, C:c, 
-					Turn:turn, Score:score, Mines:minesLeft, Username:user.Username, 
-					Players:players, LastX:lastX, LastY:lastY, HasBomb:hasBomb}
+	resp := Response{Game: *thisGame, Username: user.Username}
 	respJson, _ := json.Marshal(resp)
 
 	fmt.Fprint(rw, string(respJson))
