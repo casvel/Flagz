@@ -37,14 +37,22 @@ $('document').ready(function()
 	{
 		$('.panel-body').toggle();
 	});
-
-	$('#sendMsg').on('click', function()
-	{
-		var msg = $('textarea').val();		
-		$('<div class="well"><p>' + msg + '</p></div>').appendTo('.containerwell');
-		$('textarea').val('');
-	});
-
+	
+	$(document).ready(function () { 
+	     $('#sendMsg').click(function () {
+	         var msg = $('textarea').val();		
+	         $.ajax({
+	           url: '/game/chat',
+	           type: 'post',
+	           dataType: 'html',
+	           data : { ajax_post_data: msg},
+	           success : function(data) {
+	             alert(data);
+	             $('.containerwell').html(data);
+	           },
+	         });
+	      });
+	});             
 
 	/***** Auxiliar Functions *****/
 	function stringPlayers()
