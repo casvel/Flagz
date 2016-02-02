@@ -1,19 +1,18 @@
 $('document').ready(function()
 {
 	/***** Variables *****/
-	var r, c;
-	var turn;
-	var players = ["", ""];
-	var hasRival = false;
-	var score = [0, 0];
-	var mines;
+	var dX = [0, 1, 1, 1, 0, -1, -1, -1], dY = [1, 1, 0, -1, -1, -1, 0, 1];
+
+	var game;	
 	var username;
 	var myPos, rivalPos;
+	
+	var canUpdate = true;
+	var hasRival = false;
+	var bombActive = false;
 	var xhover = -10, yhover = -10;
-	var bombActive = false, hasBomb = true, rivalHasBomb = true;
-	var dX = [0, 1, 1, 1, 0, -1, -1, -1], dY = [1, 1, 0, -1, -1, -1, 0, 1];
+
 	var myInterval = setInterval(updateBoard, 1000);
-	var lastX = -1, lastY = -1;
 	/***** END Variables *****/
 
 	/***** "main" *****/
@@ -57,15 +56,15 @@ $('document').ready(function()
 	/***** Auxiliar Functions *****/
 	function stringPlayers()
 	{
-		if (turn == 0)
-			return "<strong style='color:#D9534F'>"+players[0]+"</strong> vs "+players[1];
+		if (game.Turn == 0)
+			return "<strong style='color:#D9534F'>"+game.Players[0]+"</strong> vs "+game.Players[1];
 		else
-			return players[0]+" vs <strong style='color:#D9534F'>"+players[1]+"</strong>";
+			return game.Players[0]+" vs <strong style='color:#D9534F'>"+game.Players[1]+"</strong>";
 	}
 
 	function showEndModal()
 	{
-		if (score[myPos] > score[rivalPos])
+		if (game.Score[myPos] > game.Score[rivalPos])
 		{
 			$("#modal-end .modal-title").html("You Win!");
 			$("#modal-end .modal-body").html("<p><h4 style='text-align:center'> You're awesome! <br><br> <img src='../images/win-baby.jpg' align='middle' style='width:60%;height:50%'> </h4> </p>");
@@ -82,44 +81,30 @@ $('document').ready(function()
 	function updateVariables(resp)
 	{
 		// Esto tiene que ir antes de actualizar lastX y lastY.
-		$("#"+lastX+"_"+lastY).css("border-style","none");
+		//$("#"+lastX+"_"+lastY).css("border-style","none");
 
-		r        = resp.R;
-		c        = resp.C;
-		turn     = resp.Turn;
-		score[0] = resp.Score[0];
-		score[1] = resp.Score[1];
-		mines    = resp.Mines;
-		username = resp.Username;
-		players  = resp.Players
-		
-		lastX = resp.LastX;
-		lastY = resp.LastY;
-
-		hasBomb      = resp.HasBomb[myPos];
-		rivalHasBomb = resp.HasBomb[rivalPos];
-
-		hasRival = (players[0] != "" && players[1] != "");
+		game     = resp.Game;
+		hasRival = (game.Players[rivalPos] != "");
 	}
 
 	function updateHTML()
 	{
 		$("#players").html(stringPlayers());
-		$("#myScore").html("Score: "+score[myPos]);
-		$("#rivalScore").html("Score: "+score[rivalPos]);
-		$("#rivalUsername").html(players[rivalPos]);
-		$("#mines").html("Mines: <strong>"+mines+"</strong>");
-		$("#"+lastX+"_"+lastY).css({"border-style":"solid", "border-color":"#D9534F", "border-width":"2px"});
-		if (!hasBomb)
+		$("#myScore").html("Score: "+game.Score[myPos]);
+		$("#rivalScore").html("Score: "+game.Score[rivalPos]);
+		$("#rivalUsername").html(game.Players[rivalPos]);
+		$("#mines").html("Mines: <strong>"+game.MinesLeft+"</strong>");
+
+		if (!game.HasBomb[myPos])
 		{
 			$("#myBomb").addClass("disabled");
 			$("#myBomb").removeClass("active");
 			$("#imgMyBomb").attr("src", "../images/bomb-disabled.png");
 		}
-		if (!rivalHasBomb)
+		if (!game.HasBomb[rivalPos])
 			$("#imgRivalBomb").attr("src", "../images/bomb-disabled.png");
 
-		if (players[turn] == username)
+		if (game.Players[game.Turn] == username)
 		{
 			$("#rivalBlock").css("background-color", "white");
 			$("#rivalUsername").css("color", "#325D88");
@@ -136,17 +121,63 @@ $('document').ready(function()
 		}
 	}
 
+	function getImg(i, j)
+	{
+		var img;
+		if (game.StateBoard[i][j] != -1)
+		{
+			if (game.Board[i][j] == -1)
+			{
+				if (game.StateBoard[i][j] == 0)
+					img = "redflag";
+				else
+					img = "blueflag";
+			}
+			else 
+				img = "" + game.Board[i][j];
+
+			if (i == game.LastX && j == game.LastY)
+				img += "-last";
+		}
+		else
+		{
+			img = "hidden";
+			if (xhover == i && yhover == j)
+				img += "-hover";
+			else if (bombActive)
+			{
+				var hover = false;
+				for (var k = 0; k < 8; ++k)
+				{
+					var nx = xhover+dX[k], ny = yhover+dY[k];
+					if (nx == i && ny == j)
+						img += "-hover";
+				}
+			}
+		}
+
+		return img
+	}
+
 	function updateBoard()
 	{
 
-		if (players[turn] == username && hasRival)
+		if (game.Players[game.Turn] == username && hasRival)
+		{
+			document.title = "Flagz - Your turn!";
 			return;
+		}
 
-		if (mines == 0)
+		document.title = "Flagz - Game";
+
+		if (game.MinesLeft == 0)
 		{
 			clearInterval(myInterval);
 			return;
 		}
+
+		if (!canUpdate)
+			return;
 
 		$.ajax({
 			url: "/game/data", 
@@ -154,67 +185,19 @@ $('document').ready(function()
 		}).done(function(resp)
 		{	
 			resp = JSON.parse(resp);
-			//console.log(resp);
 
 			updateVariables(resp);
 
-			for (var i = 0; i < r; i++)
-			{
-				for (var j = 0; j < c; j++)
+			for (var i = 0; i < game.R; i++)
+				for (var j = 0; j < game.C; j++)
 				{
-					var img;
-
-					if (resp.StateBoard[i][j] != -1)
-					{
-						if (resp.Board[i][j] == -1)
-						{
-							if (resp.StateBoard[i][j] == 0)
-								img = "redflag";
-							else
-								img = "blueflag";
-						}
-						else 
-							img = "" + resp.Board[i][j];
-					}
-					else
-					{
-						if (bombActive)
-						{
-							var hoverBomb = (i == xhover && j == yhover);
-
-							for (var k = 0; k < 8; ++k)
-							{
-								var x = xhover+dX[k];
-								var y = yhover+dY[k];
-						
-								if (x < 0 || y < 0 || x == r || y == c)
-									continue;
-						
-								if (x == i && y == j)
-									hoverBomb = true;
-							}
-
-							if (hoverBomb)
-								img = "hidden-hover";
-							else
-								img = "hidden";
-						}
-						else
-						{
-							if (xhover == i && yhover == j)
-								img = "hidden-hover";
-							else
-								img = "hidden";
-						}
-					}
-
+					var img = getImg(i, j);
 					$("#"+i+"_"+j).attr("src", "../images/"+img+".png");
 				}
-			}
 
 			updateHTML();
 
-			if (mines == 0)
+			if (game.MinesLeft == 0)
 				showEndModal();
 		});
 	}
@@ -228,36 +211,21 @@ $('document').ready(function()
 		}).done(function(resp)
 		{	
 			resp = JSON.parse(resp);
-			//console.log(resp);
-			
-			myPos = (resp.Username == resp.Players[0] ? 0 : 1);
+
+			username = resp.Username;
+			myPos    = (username == resp.Game.Players[0] ? 0 : 1);
 			rivalPos = (myPos == 0 ? 1 : 0);
+
 			updateVariables(resp);
 
 			var mytable = "";
 			mytable += "<table cellspacing='0' cellpadding='0'>"
-			for (var i = 0; i < r; i++)
+			for (var i = 0; i < game.R; i++)
 			{
 				mytable += "<tr>";
-				for (var j = 0; j < c; j++)
+				for (var j = 0; j < game.C; j++)
 				{
-					var img;
-
-					if (resp.StateBoard[i][j] != -1)
-					{
-						if (resp.Board[i][j] == -1)
-						{
-							if (resp.StateBoard[i][j] == 0)
-								img = "redflag";
-							else
-								img = "blueflag";
-						}
-						else 
-							img = "" + resp.Board[i][j];
-					}
-					else
-						img = "hidden";
-
+					var img = getImg(i, j);
 					mytable += "<td> <img id='"+i+"_"+j+"' name='cell' src='../images/"+img+".png' style='width:25px;height:25px;display:block;'> </td>"
 				}
 				mytable += "</tr>";
@@ -268,6 +236,53 @@ $('document').ready(function()
 			$("#myUsername").html(username);
 			updateHTML();
 		});
+	}
+
+	function bfs(start)
+	{
+		var queue = Array(game.R*game.C);
+		var h = 0; t = -1;
+
+		for (var i = 0; i < start.length; i++)
+		{
+			t++;
+			queue[t] = start[i];
+			game.StateBoard[start[i][0]][start[i][1]] = game.Turn;
+		}
+
+		var visited = [];
+
+		while (t >= h)
+		{
+			var x = queue[h][0];
+			var y = queue[h][1];
+			h++;
+
+			if (game.Board[x][y] == -1)
+			{
+				game.Score[game.Turn]++;
+				game.MinesLeft--;
+				keep = true;
+			}
+
+			visited.push(x, y);
+			var img = getImg(x, y);
+			$("#"+x+"_"+y).attr("src", "../images/"+img+".png");
+
+			if (game.Board[x][y] == 0)
+				for (var k = 0; k < 8; k++)
+				{
+					var nx = x+dX[k], ny = y+dY[k];
+					if (nx < 0 || nx == game.R || ny < 0 || ny == game.C || game.StateBoard[nx][ny] != -1)
+						continue;
+
+					game.StateBoard[nx][ny] = game.Turn;
+					t++;
+					queue[t] = [nx, ny];
+				}
+		}
+
+		return visited;
 	}
 	/***** END Auxiliar Functions *****/
 
@@ -292,87 +307,81 @@ $('document').ready(function()
 	// Click on some cell
 	$("[name='cell']").click(function() 
 	{
-		if (mines == 0 || players[turn] != username)
+		if (game.MinesLeft == 0 || game.Players[game.Turn] != username)
 			return;
 
+		var ids = [];
+		var ok = false;
+		
+		var id  = $(this).attr("id").split("_");
+		id[0] = parseInt(id[0]);
+		id[1] = parseInt(id[1]);
 
-		var ids = $(this).attr("id");
-		var id  = ids.split("_");
-		var ok  = ($(this).attr("src") == "../images/hidden-hover.png");
+		if (game.StateBoard[id[0]][id[1]] == -1)
+		{
+			ids.push([id[0], id[1]]);
+			ok = true;
+		}
 
 		if (bombActive)
 		{
-			
-			var xc = parseInt(id[0]);
-			var yc = parseInt(id[1]);
+			var xc = id[0];
+			var yc = id[1];
 
 			for (var k = 0; k < 8; ++k)
 			{
 				var x = xc + dX[k];
 				var y = yc + dY[k];
 
-				if (x < 0 || y < 0 || x == r || y == c)
+				if (x < 0 || y < 0 || x == game.R || y == game.C)
 					continue;
 
-				ids += ","+x+"_"+y;
-				if ($("#"+x+"_"+y).attr("src") == "../images/hidden-hover.png")
+				if (game.StateBoard[x][y] == -1)
+				{
+					ids.push([x, y]);
 					ok = true;
+				}
 			}
 		}
 
 		if (!ok)
 			return;
 
+		canUpdate = false;
+
+		var lastX = game.LastX, lastY = game.LastY;
+		game.LastX = id[0];
+		game.LastY = id[1];
+		if (lastX != -1)
+			$("#"+lastX+"_"+lastY).attr("src", "../images/"+getImg(lastX, lastY)+".png");
+
+		keep = false;
+		visited = bfs(ids);
+
 		$.ajax({
 			url: "/game/move",
 			type: "POST",
-			data: {move: ids, usedBomb: bombActive}
-		}).done(function(resp) 
-		{
-			resp = JSON.parse(resp);
-			
-			if (resp != null)
-			{
-				$("#"+lastX+"_"+lastY).css("border-style","none");
-				lastX = parseInt(id[0]);
-				lastY = parseInt(id[1]);
-
-				var keep = false;
-				for (var i = 0; i < resp.length; i++) 
-				{
-					var img;
-					if (resp[i].Val == -1)
-					{
-						img = turn == 0 ? "redflag" : "blueflag";
-						score[turn]++;
-						mines--;
-						keep = true;
-					}
-					else
-						img = "" + resp[i].Val;
-						
-					$("#"+resp[i].X+"_"+resp[i].Y).attr("src", "../images/"+img+".png");
-				}
-
-				if (keep == false)
-				{
-					turn = (turn == 1 ? 0 : 1);
-					$("#players").html(stringPlayers());
-				}
-				else
-				{
-					if (mines == 0)
-						showEndModal();
-				}
-
-				if (bombActive)
-				{	
-					bombActive = false;
-					hasBomb    = false;
-				}
-				updateHTML();
-			}
+			data: {visited:visited, usedBomb:bombActive, lastX:game.LastX, lastY:game.LastY}
 		});
+
+		if (keep == false)
+		{
+			game.Turn = (game.Turn == 1 ? 0 : 1);
+			$("#players").html(stringPlayers());
+		}
+
+		if (bombActive)
+		{	
+			bombActive = false;
+			hasBomb    = false;
+		}
+
+		if (game.MinesLeft == 0)
+			showEndModal();
+
+		updateHTML();
+
+		canUpdate = true;
 	});
 
 	// Hover some cell
@@ -393,10 +402,10 @@ $('document').ready(function()
 					var x = xhover + dX[i];
 					var y = yhover + dY[i];
 
-					if (x < 0 || y < 0 || x == r || y == c)
+					if (x < 0 || y < 0 || x == game.R || y == game.C)
 						continue;
 
-					if ($("#"+x+"_"+y).attr("src") == "../images/hidden.png")
+					if (game.StateBoard[x][y] == -1)
 						$("#"+x+"_"+y).attr("src", "../images/hidden-hover.png");
 				}
 			}
@@ -413,10 +422,10 @@ $('document').ready(function()
 					var x = xhover + dX[i];
 					var y = yhover + dY[i];
 
-					if (x < 0 || y < 0 || x == r || y == c)
+					if (x < 0 || y < 0 || x == game.R || y == game.C)
 						continue;
 
-					if ($("#"+x+"_"+y).attr("src") == "../images/hidden-hover.png")
+					if (game.StateBoard[x][y] == -1)
 						$("#"+x+"_"+y).attr("src", "../images/hidden.png");
 				}
 			}

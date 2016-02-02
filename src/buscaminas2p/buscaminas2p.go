@@ -91,71 +91,36 @@ func (B *Buscaminas) Init(R, C, mines int16, username string, id int) {
 	}
 }
 
-func bfs(xs, ys int16, B *Buscaminas, ph []Response, n *int16, keep *bool) {
+func (B *Buscaminas) Move(coord [][2]int16, usedBomb bool, lastX, lastY int16) {
 
-	if B.StateBoard[xs][ys] != -1 {
-		return;
-	}
-
-	dX, dY := []int16{0, 1, 1, 1, 0, -1, -1, -1}, []int16{1, 1, 0, -1, -1, -1, 0, 1}
-
-	queue := make([][2]int16, 0)
-	queue  = append(queue, [2]int16{xs, ys})
-
-	for len(queue) != 0 {
-
-		x := queue[0][0]
-		y := queue[0][1]
-		queue = queue[1:]
-
-		ph[*n] = Response{X: x, Y: y, Val: B.Board[x][y]}
-		B.StateBoard[x][y] = B.Turn
-		if B.Board[x][y] == -1 {
-			B.Score[B.Turn]++
-			B.MinesLeft--
-			*keep = true
-		}
-		*n++
-
-		if B.Board[x][y] == 0 {
-			for k := 0; k < 8; k++ {
-				nx, ny := x+dX[k], y+dY[k]
-
-				if nx < 0 || nx >= B.R || ny < 0 || ny >= B.C || B.StateBoard[nx][ny] != -1 {
-					continue
-				}
-
-				queue = append(queue, [2]int16{nx, ny})
-			}
-		}
-	}
-}
-
-func (B *Buscaminas) Move(coord [][2]int16, usedBomb bool) []Response {
-
-	var n int16 = 0
-	var ph []Response = make([]Response, B.R*B.C)
-	var keep bool = false
-
-	for i := range coord {
-		bfs(coord[i][0], coord[i][1], B, ph, &n, &keep)
-	}
-	
 	if usedBomb {
 		B.HasBomb[B.Turn] = false
 	}
+	B.LastX, B.LastY = lastX, lastY
 
-	if keep == false {
+
+	var keep bool = false
+	for i := range coord {
+		
+		x, y := coord[i][0], coord[i][1]
+		if B.Board[x][y] == -1 {
+			
+			B.Score[B.Turn]++
+			B.MinesLeft--
+			keep = true
+		}
+
+		B.StateBoard[x][y] = B.Turn
+	}
+
+	if !keep {
+
 		if B.Turn == 0 {
 			B.Turn = 1
 		} else {
 			B.Turn = 0
 		}
 	}
-
-	B.LastX, B.LastY = coord[0][0], coord[0][1]
-
-	return append([]Response(nil), ph[:n]...)
 }
 
 func (B *Buscaminas) PrintBoard() {
