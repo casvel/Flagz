@@ -13,6 +13,9 @@ $('document').ready(function()
 	var xhover = -10, yhover = -10;
 
 	var myInterval = setInterval(updateBoard, 1000);
+
+	var turnSound = new Audio();
+	turnSound.src = '../sounds/blop.mp3';
 	/***** END Variables *****/
 
 	/***** "main" *****/
@@ -59,7 +62,7 @@ $('document').ready(function()
 		if (game.Turn == 0)
 			return "<strong style='color:#D9534F'>"+game.Players[0]+"</strong> vs "+game.Players[1];
 		else
-			return game.Players[0]+" vs <strong style='color:#D9534F'>"+game.Players[1]+"</strong>";
+			return game.Players[0]+" vs <strong style='color: rgba(0, 78, 181,.9)'>"+game.Players[1]+"</strong>";
 	}
 
 	function showEndModal()
@@ -106,44 +109,90 @@ $('document').ready(function()
 
 		if (game.Players[game.Turn] == username)
 		{
-			$("#rivalBlock").css("background-color", "white");
-			$("#rivalUsername").css("color", "#325D88");
-			$("#myBlock").css("background-color", "#D9534F");
-			$("#myUsername").css("color", "white");
+			if(game.Turn == 0)	
+			{			
+				$("#myBlock").css("background-color", "#D9534F");
+				$("#rivalBlock").css("background-color", "white");
+				$("#rivalUsername").css("color", "rgba(0, 78, 181,.9)");
+				$("#myUsername").css("color", "white");
+			}
+			else
+			{
+				$("#myBlock").css("background-color", "rgba(0, 78, 181,.9)");
+				$("#rivalBlock").css("background-color", "white");
+				$("#rivalUsername").css("color", "#D9534F");
+				$("#myUsername").css("color", "white");
+
+			}
 		}
 		else
 		{
-			$("#rivalBlock").css("background-color", "#D9534F");
-			$("#rivalUsername").css("color", "white");
-			$("#myBlock").css("background-color", "white");
-			$("#myUsername").css("color", "#325D88");
+			if(game.Turn == 0)
+			{
+				$("#myBlock").css("background-color", "white");
+				$("#rivalBlock").css("background-color", "#D9534F");
+				$("#rivalUsername").css("color", "white");
+				$("#myUsername").css("color", "rgba(0, 78, 181,.9)");
+			}
+			else
+			{
+				$("#myBlock").css("background-color", "white");
+				$("#rivalBlock").css("background-color", "rgba(0, 78, 181,.9)");
+				$("#rivalUsername").css("color", "white");
+				$("#myUsername").css("color", "#D9534F");
+			}
 
+			//$("#rivalBlock").css("background-color", "#D9534F");
+			//$("#rivalUsername").css("color", "white");
+			//$("#myBlock").css("background-color", "white");			
 		}
 	}
 
 	function getImg(i, j)
 	{
 		var img;
+		var bgcolor;
+		var bcolor;
+
 		if (game.StateBoard[i][j] != -1)
 		{
 			if (game.Board[i][j] == -1)
 			{
-				if (game.StateBoard[i][j] == 0)
-					img = "redflag";
-				else
+				if (game.StateBoard[i][j] == 0)				
+					img = "redflag";									
+				else			
 					img = "blueflag";
+				
+				bgcolor  = " rgba(41,171,224,.7)";
+				bcolor    = " 1px solid rgba(41,171,224,.9) ";
 			}
 			else 
-				img = "" + game.Board[i][j];
+			{
+				img        = "" + game.Board[i][j];
+				bcolor    = " 1px solid rgba(132,132,132, .9) ";
+				if(img == "0")
+					bgcolor  = " rgba(132,132,132, .8) ";
+				else
+					bgcolor  = " rgba(132,132,132, .7) ";				
+			}
 
 			if (i == game.LastX && j == game.LastY)
-				img += "-last";
+			{
+				bgcolor  = " rgba(223,1,1, .5) ";
+				bcolor    = " 1px solid rgba(223,1,1, .7) ";
+			}
 		}
 		else
 		{
-			img = "hidden";
+			img = "0";
+			bgcolor  = " rgba(0,0,255, .7) ";
+			bcolor    = " 1px solid rgba(0,0,255, .9) ";
+
 			if (xhover == i && yhover == j)
-				img += "-hover";
+			{
+				bgcolor  = " rgba(0,0,255, .2) ";
+				bcolor    = " 1px solid rgba(0,0,255, .9) ";
+			}
 			else if (bombActive)
 			{
 				var hover = false;
@@ -151,12 +200,15 @@ $('document').ready(function()
 				{
 					var nx = xhover+dX[k], ny = yhover+dY[k];
 					if (nx == i && ny == j)
-						img += "-hover";
+					{
+						bgcolor  = " rgba(0,0,255, .2) ";
+						bcolor    = " 1px solid rgba(0,0,255, .9) ";
+					}
 				}
 			}
 		}
 
-		return img
+		return [img, bgcolor, bcolor];
 	}
 
 	function updateBoard()
@@ -164,7 +216,8 @@ $('document').ready(function()
 
 		if (game.Players[game.Turn] == username && hasRival)
 		{
-			document.title = "Flagz - Your turn!";
+			//turnSound.play();			
+			document.title = "Flagz - Your turn!";							
 			return;
 		}
 
@@ -192,7 +245,8 @@ $('document').ready(function()
 				for (var j = 0; j < game.C; j++)
 				{
 					var img = getImg(i, j);
-					$("#"+i+"_"+j).attr("src", "../images/"+img+".png");
+					$("#"+i+"_"+j).attr("src", "../images/"+img[0]+".png");		
+					$("#"+i+"_"+j).css({'background-color' : img[1] , 'border' : img[2]});			
 				}
 
 			updateHTML();
@@ -226,7 +280,7 @@ $('document').ready(function()
 				for (var j = 0; j < game.C; j++)
 				{
 					var img = getImg(i, j);
-					mytable += "<td> <img id='"+i+"_"+j+"' name='cell' src='../images/"+img+".png' style='width:25px;height:25px;display:block;'> </td>"
+					mytable += "<td> <img id='"+i+"_"+j+"' name='cell' src='../images/"+img[0]+".png' style='width:25px;height:25px;display:block; background-color:"+  img[1] + "; border: " + img[2] + ";'> </td>";					
 				}
 				mytable += "</tr>";
 			}
@@ -267,7 +321,8 @@ $('document').ready(function()
 
 			visited.push(x, y);
 			var img = getImg(x, y);
-			$("#"+x+"_"+y).attr("src", "../images/"+img+".png");
+			$("#"+x+"_"+y).attr("src", "../images/"+img[0]+".png");
+			$("#"+x+"_"+y).css({'background-color' : img[1] , 'border' : img[2]});
 
 			if (game.Board[x][y] == 0)
 				for (var k = 0; k < 8; k++)
@@ -353,7 +408,11 @@ $('document').ready(function()
 		game.LastX = id[0];
 		game.LastY = id[1];
 		if (lastX != -1)
-			$("#"+lastX+"_"+lastY).attr("src", "../images/"+getImg(lastX, lastY)+".png");
+		{
+			var img = getImg(lastX, lastY);
+			$("#"+lastX+"_"+lastY).attr("src", "../images/"+img[0]+".png");
+			$("#"+lastX+"_"+lastY).css({'background-color' : img[1] , 'border' : img[2]});
+		}
 
 		keep = false;
 		visited = bfs(ids);
@@ -373,7 +432,7 @@ $('document').ready(function()
 		if (bombActive)
 		{	
 			bombActive = false;
-			hasBomb    = false;
+			game.HasBomb[myPos] = false;
 		}
 
 		if (game.MinesLeft == 0)
@@ -392,8 +451,10 @@ $('document').ready(function()
 			xhover = parseInt(id[0]);
 			yhover = parseInt(id[1]);
 
-			if ($(this).attr("src") == "../images/hidden.png")
-				$(this).attr("src", "../images/hidden-hover.png");
+			if (game.StateBoard[xhover][yhover] == -1)
+			{
+				$("#"+xhover+"_"+yhover).css({'background-color' : 'rgba(0,0,255, .2)'});
+			}
 
 			if (bombActive)
 			{
@@ -406,14 +467,21 @@ $('document').ready(function()
 						continue;
 
 					if (game.StateBoard[x][y] == -1)
-						$("#"+x+"_"+y).attr("src", "../images/hidden-hover.png");
+					{
+						$("#"+x+"_"+y).css({'background-color' : 'rgba(0,0,255, .2)'});
+					}
 				}
 			}
 		},
 		function()
 		{
-			if ($(this).attr("src") == "../images/hidden-hover.png")
-				$(this).attr("src", "../images/hidden.png");
+			var id = $(this).attr("id").split("_");
+			x = parseInt(id[0]);
+			y = parseInt(id[1]);
+			if (game.StateBoard[x][y] == -1)
+			{
+				$("#"+x+"_"+y).css({'background-color' : 'rgba(0,0,255, .7)'});
+			}
 
 			if (bombActive)
 			{
@@ -426,7 +494,9 @@ $('document').ready(function()
 						continue;
 
 					if (game.StateBoard[x][y] == -1)
-						$("#"+x+"_"+y).attr("src", "../images/hidden.png");
+					{
+						$("#"+x+"_"+y).css({'background-color' : 'rgba(0,0,255, .7)'});
+					}
 				}
 			}
 
