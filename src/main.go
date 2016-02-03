@@ -99,6 +99,7 @@ func main() {
 	mux.addRoute("/game/data", handleGameData, []string{"GET", "POST"})
 	mux.addRoute("/game/joinGame", handleGameJoinGame, []string{"GET", "POST"})
 	mux.addRoute("/game/exit", handleGameExit, []string{"GET", "POST"})
+	mux.addRoute("/game/chat", handleGameChat, []string{"GET" , "POST"})
 
 	filehttp.Handle("/", http.FileServer(http.Dir("../")))
 
@@ -468,3 +469,11 @@ func handleLogout(rw http.ResponseWriter, req *http.Request) {
 	backend.UpdateLogged(false, user.Username)
 	http.Redirect(rw, req, "/login", http.StatusSeeOther)
 }
+
+ func handleGameChat(w http.ResponseWriter, r *http.Request) {
+ 	if r.Method == "POST" {
+ 		ajax_post_data := r.FormValue("ajax_post_data")
+ 		fmt.Println("Receive ajax post data string ", ajax_post_data)
+ 		w.Write([]byte(ajax_post_data))
+ 	}
+ }
