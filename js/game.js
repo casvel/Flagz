@@ -46,9 +46,6 @@ $('document').ready(function()
 
 	function updateVariables(resp)
 	{
-		// Esto tiene que ir antes de actualizar lastX y lastY.
-		//$("#"+lastX+"_"+lastY).css("border-style","none");
-
 		game     = resp.Game;
 		hasRival = (game.Players[rivalPos] != "");
 	}
@@ -339,7 +336,7 @@ $('document').ready(function()
 		if (bombActive)
 		{	
 			bombActive = false;
-			hasBomb    = false;
+			game.HasBomb[myPos] = false;
 		}
 
 		if (game.MinesLeft == 0)
