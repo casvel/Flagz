@@ -312,7 +312,7 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 			var new_game buscaminas2p.Buscaminas
 
 			games[user.Username] = &new_game
-			games[user.Username].Init(10, 15, 31, user.Username, idGame)
+			games[user.Username].Init(16, 16, 51, user.Username, idGame)
 			players[idGame] = [2]string{user.Username, ""}
 			idGame++
 			
@@ -369,28 +369,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 
 	thisGame     := games[user.Username]
 
-	/*board        := thisGame.Board
-	stateBoard   := thisGame.StateBoard
-	r, c         := thisGame.R, thisGame.C
-	turn         := thisGame.Turn
-	score        := thisGame.Score
-	minesLeft    := thisGame.MinesLeft
-	players      := thisGame.Players
-	lastX, lastY := thisGame.LastX, thisGame.LastY
-	hasBomb      := thisGame.HasBomb*/
-
 	type Response struct {
-
-		/*Board [][]int16
-		StateBoard [][]int16
-		Turn int16
-		R, C int16
-		LastX, LastY int16
-		Score [2]int16
-		Mines int16
-		Username string
-		Players [2]string
-		HasBomb [2]bool*/
 
 		Game buscaminas2p.Buscaminas
 		Username string

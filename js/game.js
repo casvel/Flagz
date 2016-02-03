@@ -22,40 +22,7 @@ $('document').ready(function()
 	initBoard();
 	/***** END "main" *****/
 
-	var myInterval = setInterval(updateBoard, 1000); 
-
-	$(window).unload(function(){
-		$.ajax({
-			url: "/game/exit", 
-			type: "POST",
-			async: false
-		});
-	});	
-
-	$('.panel-body').hide();
-	$('<h5>'+ players[1] + '</h5>').appendTo('.panel-heading');
-
-	$('.panel-heading').on('click', function()
-	{
-		$('.panel-body').toggle();
-	});
 	
-	$(document).ready(function () { 
-	     $('#sendMsg').click(function () {
-	         var msg = $('textarea').val();		
-	         $.ajax({
-	           url: '/game/chat',
-	           type: 'post',
-	           dataType: 'html',
-	           data : { ajax_post_data: msg},
-	           success : function(data) {
-	             alert(data);
-	             $('.containerwell').html(data);
-	           },
-	         });
-	      });
-	});             
-
 	/***** Auxiliar Functions *****/
 	function stringPlayers()
 	{
@@ -137,11 +104,7 @@ $('document').ready(function()
 				$("#rivalBlock").css("background-color", "rgba(0, 78, 181,.9)");
 				$("#rivalUsername").css("color", "white");
 				$("#myUsername").css("color", "#D9534F");
-			}
-
-			//$("#rivalBlock").css("background-color", "#D9534F");
-			//$("#rivalUsername").css("color", "white");
-			//$("#myBlock").css("background-color", "white");			
+			}		
 		}
 	}
 
@@ -160,35 +123,35 @@ $('document').ready(function()
 				else			
 					img = "blueflag";
 				
-				bgcolor  = " rgba(41,171,224,.7)";
-				bcolor    = " 1px solid rgba(41,171,224,.9) ";
+				bgcolor = " #74C8EB";
+				bcolor  = " 1px solid rgba(41,171,224,.9) ";
 			}
 			else 
 			{
-				img        = "" + game.Board[i][j];
-				bcolor    = " 1px solid rgba(132,132,132, .9) ";
+				img    = "" + game.Board[i][j];
+				bcolor = " 1px solid rgba(132,132,132, .9) ";
 				if(img == "0")
-					bgcolor  = " rgba(132,132,132, .8) ";
+					bgcolor = " rgba(132,132,132, .8) ";
 				else
-					bgcolor  = " rgba(132,132,132, .7) ";				
+					bgcolor = " rgba(132,132,132, .7) ";				
 			}
 
 			if (i == game.LastX && j == game.LastY)
 			{
-				bgcolor  = " rgba(223,1,1, .5) ";
-				bcolor    = " 1px solid rgba(223,1,1, .7) ";
+				bgcolor = " #E68F8C ";
+				bcolor  = " 1px solid rgba(223,1,1, .7) ";
 			}
 		}
 		else
 		{
 			img = "0";
-			bgcolor  = " rgba(0,0,255, .7) ";
-			bcolor    = " 1px solid rgba(0,0,255, .9) ";
+			bgcolor = " rgba(0,0,255, .7) ";
+			bcolor  = " 1px solid rgba(0,0,255, .9) ";
 
 			if (xhover == i && yhover == j)
 			{
-				bgcolor  = " rgba(0,0,255, .2) ";
-				bcolor    = " 1px solid rgba(0,0,255, .9) ";
+				bgcolor = " rgba(0,0,255, .2) ";
+				bcolor  = " 1px solid rgba(0,0,255, .9) ";
 			}
 			else if (bombActive)
 			{
@@ -198,8 +161,8 @@ $('document').ready(function()
 					var nx = xhover+dX[k], ny = yhover+dY[k];
 					if (nx == i && ny == j)
 					{
-						bgcolor  = " rgba(0,0,255, .2) ";
-						bcolor    = " 1px solid rgba(0,0,255, .9) ";
+						bgcolor = " rgba(0,0,255, .2) ";
+						bcolor  = " 1px solid rgba(0,0,255, .9) ";
 					}
 				}
 			}
@@ -408,7 +371,7 @@ $('document').ready(function()
 		{
 			var img = getImg(lastX, lastY);
 			$("#"+lastX+"_"+lastY).attr("src", "../images/"+img[0]+".png");
-			$("#"+lastX+"_"+lastY).css({'background-color' : img[1] , 'border' : img[2]});
+			$("#"+lastX+"_"+lastY).css({'background-color':img[1], 'border':img[2]});
 		}
 
 		keep = false;
@@ -465,7 +428,7 @@ $('document').ready(function()
 
 					if (game.StateBoard[x][y] == -1)
 					{
-						$("#"+x+"_"+y).css({'background-color' : 'rgba(0,0,255, .2)'});
+						$("#"+x+"_"+y).css({'background-color':'rgba(0,0,255, .2)'});
 					}
 				}
 			}
@@ -477,7 +440,7 @@ $('document').ready(function()
 			y = parseInt(id[1]);
 			if (game.StateBoard[x][y] == -1)
 			{
-				$("#"+x+"_"+y).css({'background-color' : 'rgba(0,0,255, .7)'});
+				$("#"+x+"_"+y).css({'background-color':'rgba(0,0,255, .7)'});
 			}
 
 			if (bombActive)
@@ -492,7 +455,7 @@ $('document').ready(function()
 
 					if (game.StateBoard[x][y] == -1)
 					{
-						$("#"+x+"_"+y).css({'background-color' : 'rgba(0,0,255, .7)'});
+						$("#"+x+"_"+y).css({'background-color':'rgba(0,0,255, .7)'});
 					}
 				}
 			}

@@ -15,7 +15,7 @@
 .row.equal [class*="bottom"] {
     float: none;
     display: table-cell;
-    /*vertical-align: bottom; */
+    vertical-align: bottom; 
 }
 
 .row.equal [class*="right"] {
