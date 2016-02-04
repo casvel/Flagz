@@ -48,6 +48,14 @@ $('document').ready(function()
 		$("#modal-end").modal();
 	}
 
+	function showMines()
+	{
+		for (var i = 0; i < game.R; i++)
+			for (var j = 0; j < game.C; j++)
+				if (game.StateBoard[i][j] == -1 && game.Board[i][j] == -1)
+					$("#"+i+"_"+j).attr("src", "../images/mine.png");
+	}
+
 	function updateVariables(resp)
 	{
 		game     = resp.Game;
@@ -183,7 +191,7 @@ $('document').ready(function()
 
 		document.title = "Flagz - Game";
 
-		if (game.MinesLeft == 0)
+		if (game.Score[0] >= 26 || game.Score[1] >= 26)
 		{
 			clearInterval(myInterval);
 			return;
@@ -211,8 +219,11 @@ $('document').ready(function()
 
 			updateHTML();
 
-			if (game.MinesLeft == 0)
+			if (game.Score[0] >= 26 || game.Score[1] >= 26)
+			{
+				showMines();
 				showEndModal();
+			}
 		});
 	}
 
@@ -322,7 +333,7 @@ $('document').ready(function()
 	// Click on some cell
 	$("[name='cell']").click(function() 
 	{
-		if (game.MinesLeft == 0 || game.Players[game.Turn] != username)
+		if (game.Score[0] >= 26 || game.Score[1] >= 26 || game.Players[game.Turn] != username)
 			return;
 
 		var ids = [];
@@ -395,8 +406,11 @@ $('document').ready(function()
 			game.HasBomb[myPos] = false;
 		}
 
-		if (game.MinesLeft == 0)
+		if (game.Score[0] >= 26 || game.Score[1] >= 26)
+		{
+			showMines();
 			showEndModal();
+		}
 
 		updateHTML();
 
