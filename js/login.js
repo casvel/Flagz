@@ -47,4 +47,8 @@ $(document).ready(function(){
 		$("#sectionRegister").show();
 	});
 
+	$("#register").validator();
+
+	$("#login").validator();
+
 });
