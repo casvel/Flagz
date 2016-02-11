@@ -15,7 +15,6 @@
 .row.equal [class*="bottom"] {
     float: none;
     display: table-cell;
-    /*vertical-align: bottom; */
 }
 
 .row.equal [class*="right"] {
@@ -28,13 +27,20 @@
     width: 25%;
     position: fixed;
     bottom: -20px;
-    right: 0;
+    right: 40px;
 }
 
 .panel-heading
 {
-    cursor: pointer;
-    font-size: 1em;
+    cursor: pointer;    
+    height: 45px;
+}
+
+.panel-heading .panel-title
+{
+    font-size: 13px !important;
+    display: flex !important;
+    line-height: 25px !important;
 }
 
 .panel-body
@@ -43,37 +49,69 @@
     overflow-y: auto;
 }
 
-.btn-xs
+#sendBtn
 {
-    height: 100%;
-    width: 100%;
-    line-height: 4;
+    padding: 6px 16px;
+    border-radius: 25px;
+    border: none;
+    background-color: rgba(41,171,284,.8);    
+    outline: none;
 }
 
-.message
+#msg
 {
-    bottom: 0;
+    padding: 6px 15px;
+    width: 75%;
+    border: 1px solid gainsboro;
+    float: left;
+    border-radius: 35px;
+    margin-right: 10px;
+    outline: none;
+}
+
+.panel-bottom
+{
     position: absolute;
-    width: 87%;
+    bottom: 10px;
 }
 
-.table
+#log
 {
-    margin-bottom: 0px;
-}
-
-.containerwell
-{
-    padding-bottom: 40px;
     width: 100%;
     word-wrap: break-word;
+    overflow-y: auto;
+    margin-bottom: 40px;
+    max-height: 200px;
 }
 
-.well
+#log p
 {
-    padding: 10px 0px 0px 15px;
-    margin-bottom: 15px;
+    min-height: 20px;
+    padding: 6px 10px;
+    background-color: rgba(168,252,50,.6);
+    border-left: 4px solid rgba(168,252,50,9);
+    border-radius: 5px;
+    width: fit-content;
+    margin: 0 0 5px !important;
+    word-break: break-word;
 }
+
+#log div
+{
+    width: 100%;
+    display: inline-block;
+}
+
+#log  div  #umsg
+{
+    background-color: rgba(254,46,100,.4) !important;
+     float: right;     
+    border-right: 4px solid rgba(254,46,100,.3) !important;
+    border-left: none !important;
+    margin-bottom: -1px !important;
+    word-break: break-word; 
+}
+
 
 .btn-danger, .btn-danger:hover, .btn-danger:active
 {
@@ -84,3 +122,9 @@
 {
     padding: 14px 15px 14px 21px !important;
 }
+
+.navbar-brand
+{
+    padding: 0px !important;
+}
+

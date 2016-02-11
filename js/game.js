@@ -5,7 +5,7 @@ $('document').ready(function()
 
 	var game;	
 	var username;
-	var myPos, rivalPos;
+	var myPos, rivalPos;	
 	
 	var canUpdate = true;
 	var hasRival = false;
@@ -13,9 +13,7 @@ $('document').ready(function()
 	var xhover = -10, yhover = -10;
 
 	var myInterval = setInterval(updateBoard, 1000);
-
-	var turnSound = new Audio();
-	turnSound.src = '../sounds/blop.mp3';
+	
 	/***** END Variables *****/
 
 	/***** "main" *****/
@@ -31,30 +29,6 @@ $('document').ready(function()
 			async: false
 		});
 	});	
-
-	$('.panel-body').hide();
-	$('<h5>'+ players[1] + '</h5>').appendTo('.panel-heading');
-
-	$('.panel-heading').on('click', function()
-	{
-		$('.panel-body').toggle();
-	});
-	
-	$(document).ready(function () { 
-	     $('#sendMsg').click(function () {
-	         var msg = $('textarea').val();		
-	         $.ajax({
-	           url: '/game/chat',
-	           type: 'post',
-	           dataType: 'html',
-	           data : { ajax_post_data: msg},
-	           success : function(data) {
-	             alert(data);
-	             $('.containerwell').html(data);
-	           },
-	         });
-	      });
-	});             
 
 	/***** Auxiliar Functions *****/
 	function stringPlayers()
@@ -140,11 +114,7 @@ $('document').ready(function()
 				$("#rivalBlock").css("background-color", "rgba(0, 78, 181,.9)");
 				$("#rivalUsername").css("color", "white");
 				$("#myUsername").css("color", "#D9534F");
-			}
-
-			//$("#rivalBlock").css("background-color", "#D9534F");
-			//$("#rivalUsername").css("color", "white");
-			//$("#myBlock").css("background-color", "white");			
+			}			
 		}
 	}
 
@@ -339,9 +309,18 @@ $('document').ready(function()
 
 		return visited;
 	}
-	/***** END Auxiliar Functions *****/
+	/***** END Auxiliar Functions *****/	
 
 	/***** Events *****/
+
+	// Show chat 
+	$('.panel-body').hide();	
+
+	$('.panel-heading').on('click', function()
+	{
+		$('.panel-body').toggle();		
+	});    
+
 	// Activate bomb
 	$("#myBomb").click(function(){
 

@@ -13,7 +13,7 @@ import (
 	"github.com/apexskier/httpauth"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/flagz/src/buscaminas2p"
+	"github.com/flagz/src/buscaminas2p"	
 )
 
 type myHandler struct {}
@@ -45,6 +45,9 @@ var (
 	
 	mux       myMux
 	filehttp  = http.NewServeMux()
+	wshttp    = http.NewServeMux()	
+
+	connPlayer map[string]*connection
 )
 
 func main() {
@@ -60,6 +63,7 @@ func main() {
 
 	games     = make(map[string]*buscaminas2p.Buscaminas)
 	players   = make(map[int][2]string)
+	connPlayer = make(map[string]*connection)
 
 	// create some default roles
 	roles = make(map[string]httpauth.Role)
@@ -101,7 +105,11 @@ func main() {
 	mux.addRoute("/game/exit", handleGameExit, []string{"GET", "POST"})
 	mux.addRoute("/game/chat", handleGameChat, []string{"GET" , "POST"})
 
-	filehttp.Handle("/", http.FileServer(http.Dir("../")))
+	hub := newHub()
+   	go hub.run()
+	
+	filehttp.Handle("/", http.FileServer(http.Dir("../"))) // files
+	wshttp.Handle("/ws", wsHandler{h: hub})  // websocket 
 
 	fmt.Printf("Server running on port %d\n", port)
 
@@ -128,6 +136,10 @@ func CleanLoggedUsers() {
 func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	//fmt.Println(req.URL.Path, req.Method)
+
+	if (req.URL.Path == "/ws") {
+		wshttp.ServeHTTP(rw, req)
+	}
 
 	if (strings.Contains(req.URL.Path, ".")) {
 		filehttp.ServeHTTP(rw, req)
@@ -320,7 +332,12 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 			games[user.Username].PrintBoard()
 		}
 
-		t.Execute(rw, user)
+		type Response struct {
+		Host string
+		Username string
+	}
+		resp := Response{Host: req.Host, Username: user.Username}		
+		t.Execute(rw, resp)
 	}
 	
 }
