@@ -97,11 +97,11 @@ func main() {
 	mux.addRoute("/lobby/players", handleLobbyPlayers, []string{"GET", "POST"})
 
 	mux.addRoute("/game", handleGame, []string{"GET", "POST"})
+	mux.addRoute("/game/init", handleGameInit, []string{"GET", "POST"})
 	mux.addRoute("/game/move", handleGameMove, []string{"GET", "POST"})
 	mux.addRoute("/game/data", handleGameData, []string{"GET", "POST"})
 	mux.addRoute("/game/joinGame", handleGameJoinGame, []string{"GET", "POST"})
 	mux.addRoute("/game/exit", handleGameExit, []string{"GET", "POST"})
-	mux.addRoute("/game/chat", handleGameChat, []string{"GET" , "POST"})
 
 	hub := newHub()
    	go hub.run()
@@ -137,10 +137,12 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	if (req.URL.Path == "/ws") {
 		wshttp.ServeHTTP(rw, req)
+		return;
 	}
 
 	if (strings.Contains(req.URL.Path, ".")) {
 		filehttp.ServeHTTP(rw, req)
+		return;
 	}
 
 	if f, ok := mux[req.Method][req.URL.Path]; ok {
@@ -152,9 +154,9 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		} else {
 
 			if (err == nil) {
-				lastTime, _  := backend.GetLastSeen(user.Username)
 
-				duration := time.Since(lastTime)
+				lastTime, _  := backend.GetLastSeen(user.Username)
+				duration     := time.Since(lastTime)
 			
 				if duration.Minutes() > 5 {
 					handleLogout(rw, req)
@@ -162,6 +164,19 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				} else {
 					backend.UpdateLogged(true, user.Username)
 					backend.UpdateLastSeen(user.Username)
+				}
+
+				_, ok     := games[user.Username]
+				splitPath := strings.Split(req.URL.Path, "/")
+
+				if ok && splitPath[1] != "game" && splitPath[1] != "logout" {
+					http.Redirect(rw, req, "/game", http.StatusSeeOther)
+					return
+				}
+
+				if !ok && splitPath[1] == "game" && len(splitPath) < 3 {
+					http.Redirect(rw, req, "/lobby", http.StatusSeeOther)
+					return
 				}
 			}
 
@@ -275,6 +290,7 @@ func handleGameExit(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	deletePlayerFromGame(user.Username)
+	http.Redirect(rw, req, "/lobby", http.StatusSeeOther)
 }
 
 func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
@@ -304,17 +320,12 @@ func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
 	http.Redirect(rw, req, "/game", http.StatusSeeOther)
 }
 
-func handleGame(rw http.ResponseWriter, req *http.Request) {
+func handleGameInit(rw http.ResponseWriter, req *http.Request) {
 
 	user, err := aaa.CurrentUser(rw, req)
 	if (err != nil) {
 		panic(err)
 	} else {
-
-		t, err := template.ParseFiles("../views/game.html")	
-		if err != nil {
-			panic(err)
-		}
 
 		if _, ok := games[user.Username]; ok == true {
 			fmt.Println("It's playing already.")
@@ -330,11 +341,25 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 			games[user.Username].PrintBoard()
 		}
 
-		type Response struct {
-		Host string
-		Username string
+		http.Redirect(rw, req, "/game", http.StatusSeeOther)
 	}
-		resp := Response{Host: req.Host, Username: user.Username}		
+}
+
+func handleGame(rw http.ResponseWriter, req *http.Request) {
+
+	user, err := aaa.CurrentUser(rw, req)
+	if (err != nil) {
+		panic(err)
+	} else {
+
+		t, _ := template.ParseFiles("../views/game.html")	
+
+		type Response struct {
+			Host string
+			Username string
+		}
+		resp := Response{Host: req.Host, Username: user.Username}
+
 		t.Execute(rw, resp)
 	}
 	
@@ -463,11 +488,3 @@ func handleLogout(rw http.ResponseWriter, req *http.Request) {
 	backend.UpdateLogged(false, user.Username)
 	http.Redirect(rw, req, "/login", http.StatusSeeOther)
 }
-
- func handleGameChat(w http.ResponseWriter, r *http.Request) {
- 	if r.Method == "POST" {
- 		ajax_post_data := r.FormValue("ajax_post_data")
- 		fmt.Println("Receive ajax post data string ", ajax_post_data)
- 		w.Write([]byte(ajax_post_data))
- 	}
- }

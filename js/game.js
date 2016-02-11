@@ -486,12 +486,12 @@ $('document').ready(function()
 	);
 
 	// Delete game when exit page
-	$(window).unload(function(){
+	/*$(window).unload(function(){
 		$.ajax({
 			url: "/game/exit", 
 			type: "POST",
 			async: false
 		});
-	});
+	});*/
 	/***** END Events *****/
 });
