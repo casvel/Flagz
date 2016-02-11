@@ -1,4 +1,4 @@
-package buscaminas2p
+package main
 
 import (
 

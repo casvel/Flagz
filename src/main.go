@@ -12,8 +12,6 @@ import (
 
 	"github.com/apexskier/httpauth"
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/flagz/src/buscaminas2p"	
 )
 
 type myHandler struct {}
@@ -39,7 +37,7 @@ var (
 	port        = 8009
 	backenddb   = "david:david123@tcp(127.0.0.1:3306)/flagz?parseTime=true&loc=Local"
 
-	games     map[string]*buscaminas2p.Buscaminas
+	games     map[string]*Buscaminas
 	players   map[int][2]string       
 	idGame    int = 0
 	
@@ -61,7 +59,7 @@ func main() {
 	}
 	defer backend.Close()
 
-	games     = make(map[string]*buscaminas2p.Buscaminas)
+	games     = make(map[string]*Buscaminas)
 	players   = make(map[int][2]string)
 	connPlayer = make(map[string]*connection)
 
@@ -321,7 +319,7 @@ func handleGame(rw http.ResponseWriter, req *http.Request) {
 		if _, ok := games[user.Username]; ok == true {
 			fmt.Println("It's playing already.")
 		} else {
-			var new_game buscaminas2p.Buscaminas
+			var new_game Buscaminas
 
 			games[user.Username] = &new_game
 			games[user.Username].Init(16, 16, 51, user.Username, idGame)
@@ -388,7 +386,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 
 	type Response struct {
 
-		Game buscaminas2p.Buscaminas
+		Game Buscaminas
 		Username string
 	}
 

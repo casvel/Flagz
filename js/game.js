@@ -21,13 +21,20 @@ $('document').ready(function()
 	/***** END "main" *****/
 
 
-	/***** Auxiliar Functions *****/
+	/***** Functions *****/
 	function stringPlayers()
 	{
 		if (game.Turn == 0)
 			return "<strong style='color:#D9534F'>"+game.Players[0]+"</strong> vs "+game.Players[1];
 		else
 			return game.Players[0]+" vs <strong style='color: rgba(0, 78, 181,.9)'>"+game.Players[1]+"</strong>";
+	}
+
+	function gameOver()
+	{
+		showMines();
+		showEndModal();
+		document.title = "Flagz - Game Over";	
 	}
 
 	function showEndModal()
@@ -218,10 +225,7 @@ $('document').ready(function()
 			updateHTML();
 
 			if (game.Score[0] >= 26 || game.Score[1] >= 26)
-			{
-				showMines();
-				showEndModal();
-			}
+				gameOver();
 		});
 	}
 
@@ -308,7 +312,7 @@ $('document').ready(function()
 
 		return visited;
 	}
-	/***** END Auxiliar Functions *****/	
+	/***** END Functions *****/	
 
 	/***** Events *****/
 
@@ -412,10 +416,7 @@ $('document').ready(function()
 		}
 
 		if (game.Score[0] >= 26 || game.Score[1] >= 26)
-		{
-			showMines();
-			showEndModal();
-		}
+			gameOver();
 
 		updateHTML();
 

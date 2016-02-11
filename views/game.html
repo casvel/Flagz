@@ -10,66 +10,8 @@
         <script src="../js/jquery-1.11.3.min.js"></script>
         <script src="../js/bootstrap.min.js"></script>
         <script src="../js/game.js"></script>
-        <script type="text/javascript">
-        $(function() {
-
-        var turnSound = new Audio();
-        turnSound.src = '../sounds/blop.mp3';
-        var conn;
-        var msg = $("#msg");
-        var log = $("#log");    
-        var chatbody =  $('.panel-body'); 
-        var chattitle = $('.panel-title');
-        var text = " <p class='newmsg'> - <b> New Message </b></p>";
-        var c = false;
-
-        $('#msg').focus(function(){     
-            $('.newmsg').hide();
-            c = false;
-        });
-
-        function appendLog(msg) {
-            var d = log[0]
-            var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
-            msg.appendTo(log)
-            if (doScroll) {
-                d.scrollTop = d.scrollHeight - d.clientHeight;
-            }
-        }
-
-        $("#form").submit(function() {
-            if (!conn) {
-                return false;
-            }
-            if (!msg.val()) {
-                return false;
-            }
-            conn.send(msg.val());
-            appendLog($("<div><p id='umsg'>" + msg.val() + "</p></div>"));
-            msg.val("");
-            return false
-        });
-
-        if (window["WebSocket"]) {
-            conn = new WebSocket("ws://"  + {{ .Host }} + "/ws");
-            conn.onclose = function(evt) {
-                appendLog($("<div><b>Connection closed.</b></div>"))            
-            }
-            conn.onmessage = function(evt) {                
-                appendLog($("<p/>").text(evt.data))
-                turnSound.play();
-                if( chatbody.css('display') == 'none' && !c)
-                {
-                    c = true;
-                    chattitle.append(text);
-                }
-            }
-            } else {
-                appendLog($("<div><b>Your browser does not support WebSockets.</b></div>"))
-            }
-        });
-        
-        </script>        
+        <script> var host = {{ .Host }} </script>
+        <script src="../js/chat.js"></script>
     </head>
 
     <body>
@@ -171,7 +113,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                    <h2 class="modal-title"></h2>
+                    ain<h2 class="modal-title"></h2>
                 </div>
                 <div class="modal-body">
                 </div>
@@ -181,7 +123,8 @@
             </div>
         </div>
     </div>
-    <div class="panel panel-info">
+
+    <div id="chat" class="panel panel-info">
         <div class="panel-heading">
             <h3 class="panel-title">Chat</h3>
         </div>

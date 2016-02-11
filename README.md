@@ -2,14 +2,14 @@
 
 My first web project.
 
-A two players minesweeper game. Version 1.0.
+A two players minesweeper game. Version 1.1.
 
-Clone inside `github` in your `GOPATH`. Run `go run main.go` inside `github.com/flagz/src`.
+Clone inside `github.com/flagz` in your `GOPATH`. Run `go run main.go conn.go hub.go game.go` inside `github.com/flagz/src`.
 
 You will need the next packages:
 
  - `go get github.com/gorilla/mux`
- 
+ - `go get github.com/gorilla/websocket`
  - `go get github.com/go-sql-driver/mysql`
  - `go get github.com/apexskier/httpauth`. I changed some things here: 
    - Comment line 137-140 in `github.com/apexskier/httpauth/auth.go`. 
