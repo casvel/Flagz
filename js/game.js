@@ -5,24 +5,22 @@ $('document').ready(function()
 
 	var game;	
 	var username;
-	var myPos, rivalPos;
+	var myPos, rivalPos;	
 	
 	var canUpdate = true;
 	var hasRival = false;
 	var bombActive = false;
 	var xhover = -10, yhover = -10;
 
-	var myInterval = setInterval(updateBoard, 1000);
-
-	var turnSound = new Audio();
-	turnSound.src = '../sounds/blop.mp3';
+	var myInterval = setInterval(updateBoard, 1000);	
 	/***** END Variables *****/
 
 	/***** "main" *****/
 	initBoard();
+	$('.panel-body').hide();	
 	/***** END "main" *****/
 
-	
+
 	/***** Auxiliar Functions *****/
 	function stringPlayers()
 	{
@@ -112,7 +110,7 @@ $('document').ready(function()
 				$("#rivalBlock").css("background-color", "rgba(0, 78, 181,.9)");
 				$("#rivalUsername").css("color", "white");
 				$("#myUsername").css("color", "#D9534F");
-			}		
+			}				
 		}
 	}
 
@@ -310,9 +308,16 @@ $('document').ready(function()
 
 		return visited;
 	}
-	/***** END Auxiliar Functions *****/
+	/***** END Auxiliar Functions *****/	
 
 	/***** Events *****/
+
+	// Show chat
+	$('.panel-heading').on('click', function()
+	{
+		$('.panel-body').toggle();		
+	});    
+
 	// Activate bomb
 	$("#myBomb").click(function(){
 

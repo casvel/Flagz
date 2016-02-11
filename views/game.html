@@ -1,142 +1,199 @@
 <!DOCTYPE html>
 <html>
     <head>
-
         <title>Flagz - Game</title>
+        <link rel="shortcut icon" href="../images/icon.png">
+
         <link href="../css/mystyle.css" rel="stylesheet">
         <link href="../css/bootstrap.min.css" rel="stylesheet">        
 
         <script src="../js/jquery-1.11.3.min.js"></script>
         <script src="../js/bootstrap.min.js"></script>
         <script src="../js/game.js"></script>
+        <script type="text/javascript">
+        $(function() {
 
-	</head>
-	<body>
+        var turnSound = new Audio();
+        turnSound.src = '../sounds/blop.mp3';
+        var conn;
+        var msg = $("#msg");
+        var log = $("#log");    
+        var chatbody =  $('.panel-body'); 
+        var chattitle = $('.panel-title');
+        var text = " <p class='newmsg'> - <b> New Message </b></p>";
+        var c = false;
 
-        <nav class="navbar navbar-inverse navbar-fixed-top">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <a class="navbar-brand" href="#">Flagz</a>
-                </div>
-                <div id="navbar" class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav navbar-right">
-                        <li>
-                            <a href="#">{{ .Username }}</a>
-                        </li>
-                        <li>
-                            <a href="/lobby">Exit game</a>
-                        </li>
-                        <li>
-                            <a href="/logout">Logout</a>
-                        </li>
-                    </ul>
-                </div>
+        $('#msg').focus(function(){     
+            $('.newmsg').hide();
+            c = false;
+        });
+
+        function appendLog(msg) {
+            var d = log[0]
+            var doScroll = d.scrollTop == d.scrollHeight - d.clientHeight;
+            msg.appendTo(log)
+            if (doScroll) {
+                d.scrollTop = d.scrollHeight - d.clientHeight;
+            }
+        }
+
+        $("#form").submit(function() {
+            if (!conn) {
+                return false;
+            }
+            if (!msg.val()) {
+                return false;
+            }
+            conn.send(msg.val());
+            appendLog($("<div><p id='umsg'>" + msg.val() + "</p></div>"));
+            msg.val("");
+            return false
+        });
+
+        if (window["WebSocket"]) {
+            conn = new WebSocket("ws://"  + {{ .Host }} + "/ws");
+            conn.onclose = function(evt) {
+                appendLog($("<div><b>Connection closed.</b></div>"))            
+            }
+            conn.onmessage = function(evt) {                
+                appendLog($("<p/>").text(evt.data))
+                turnSound.play();
+                if( chatbody.css('display') == 'none' && !c)
+                {
+                    c = true;
+                    chattitle.append(text);
+                }
+            }
+            } else {
+                appendLog($("<div><b>Your browser does not support WebSockets.</b></div>"))
+            }
+        });
+        
+        </script>        
+    </head>
+
+    <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#"><img src="../images/icon.png" style="width: 85px; height: 60px; display: inline-block;"/> 
+                    <p style="color: whitesmoke; display: inline-block;">  Flagz </p>
+                </a>
             </div>
-        </nav>
+        <div id="navbar" class="collapse navbar-collapse">
+        <ul class="nav navbar-nav navbar-right">
+            <li>
+                <a href="#">{{ .Username }}</a>
+            </li>
+            <li>
+                <a href="/lobby">Exit game</a>
+            </li>
+            <li>
+                <a href="/logout">Logout</a>
+            </li>
+        </ul>
+        </div>
+        </div>
+    </nav>
 
-        <div class="container">
-    		<h1>Buscaminas</h1>
-
-            <div class="row">
-                <div class="col-lg-12">
-                    <h2 id="players" class="centertext"> </h2>
-                </div>
+    <div class="container">
+        <h1>Buscaminas</h1>
+        <div class="row">
+            <div class="col-lg-12">
+                <h2 id="players" class="centertext"> </h2>
             </div>
-            <div class="row">
-                <div class="col-lg-12">
-                    <h3 id="mines" class="centertext" style="color:#29ABE0; font-family:monospace"> </h3>
-                </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <h3 id="mines" class="centertext" style="color:#29ABE0; font-family:monospace"> </h3>
             </div>
-            <div class="jumbotron">
-                <div class="row equal"> 
-                    <div class="col-lg-4">
-                        <ul class="list-group">
-                            <li id="rivalBlock" class="list-group-item">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <h2 id="rivalUsername" style="color:#325D88"> </h2>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <a id="rivalBomb" href="#" class="btn btn-danger disabled" style="background-color: transparent;"><img id="imgRivalBomb" src="../images/bomb.png" style="width:50px;height:50px"></a>
-                                    </div>
+        </div>
+        <div class="jumbotron">
+            <div class="row equal"> 
+                <div class="col-lg-4">
+                    <ul class="list-group">
+                        <li id="rivalBlock" class="list-group-item">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <h2 id="rivalUsername" style="color:#325D88"> </h2>
                                 </div>
-                            </li>
-                            <li class="list-group-item">
-                                <h3 id="rivalScore" style="font-family:monospace"> </h2>
-                            </li>
-                        </ul> 
-                    </div>
-                    <div class="col-lg-4">
-                        <div id="board"> </div>
-                    </div>
-                    <div class="col-lg-4 col-lg-offset-3 bottom">
-                        <ul class="list-group">
-                            <li id="myBlock" class="list-group-item">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <h2 id="myUsername" style="color:#325D88"> </h2>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <a id="myBomb" href="#" class="btn btn-danger" style="background-color: transparent;"><img id="imgMyBomb" src="../images/bomb.png" style="width:50px;height:50px"></a>
-                                    </div>
+                                <div class="col-lg-6">
+                                    <a id="rivalBomb" href="#" class="btn btn-danger disabled" style="background-color: transparent;"><img id="imgRivalBomb" src="../images/bomb.png" style="width:50px;height:50px"></a>
                                 </div>
-                            </li>
-                            <li class="list-group-item">
-                                <h3 id="myScore" style="font-family:monospace"> </h2>
-                            </li>
-                        </ul>    
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <h3 id="rivalScore" style="font-family:monospace"> </h2>
+                        </li>
+                    </ul> 
+                </div>
+                <div class="col-lg-4">
+                    <div id="board">                        
                     </div>
+                </div>
+                <div class="col-lg-4 col-lg-offset-3 bottom">
+                    <ul class="list-group">
+                        <li id="myBlock" class="list-group-item">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <h2 id="myUsername" style="color:#325D88"> </h2>
+                                </div>
+                                <div class="col-lg-6">
+                                    <a id="myBomb" href="#" class="btn btn-danger" style="background-color: transparent;"><img id="imgMyBomb" src="../images/bomb.png" style="width:50px;height:50px"></a>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <h3 id="myScore" style="font-family:monospace"> </h2>
+                        </li>
+                    </ul>    
                 </div>
             </div>
         </div>
-
-        <div class="modal fade" id="modal-end">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h2 class="modal-title"></h2>
-                    </div>
-                    <div class="modal-body">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    </div>
+    </div>
+    <div class="modal fade" id="modal-end">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h2 class="modal-title"></h2>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
-
- <!--       <div class="panel panel-success"> 
-            <div class="panel-heading">
-                <h3 class="panel-title"></h3>
-            </div>
-            <div class="panel-body">            
-                <div class="containerwell">
-                </div>    
-                <div class="message">  
-                <table class="table table-striped table-hover ">
-                <tr>                                           
-                        <td><textarea rows="1" cols="12" class="form-control" id="sendie" placeholder="Escribe tu mensaje..." style="resize: none"> </textarea></td>
-                        <td><input type="button" class="btn btn-primary btn-xs" id="sendMsg" value="Send"></td>
-                </tr>
-                </table> 
-                -->
-
-        <div class="modal fade" id="modal-end">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h2 class="modal-title"></h2>
-                    </div>
-                    <div class="modal-body">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    </div>
+    </div>
+    <div class="modal fade" id="modal-end">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <h2 class="modal-title"></h2>
+                </div>
+                <div class="modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
-
-	</body>
+    </div>
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <h3 class="panel-title">Chat</h3>
+        </div>
+        <div class="panel-body">
+            <div id="log"></div>
+            <div class="panel-bottom">
+                <form id="form">
+                    <input type="submit" value="Send" id="sendBtn"/>
+                    <input type="text" id="msg" size="64" placeholder="Type your message here..." autocomplete="off" />
+                </form>
+            </div>
+        </div>
+    </div>
+    </body>
 </html>
