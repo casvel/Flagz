@@ -32,6 +32,11 @@ $('document').ready(function()
 
 	function gameOver()
 	{
+		return game.Score[0] >= 26 || game.Score[1] >= 26;
+	}
+
+	function endGame()
+	{
 		showMines();
 		showEndModal();
 		document.title = "Flagz - Game Over";	
@@ -119,6 +124,16 @@ $('document').ready(function()
 				$("#myUsername").css("color", "#D9534F");
 			}				
 		}
+
+		if (gameOver())
+			document.title = "Flagz - Game Over";
+		else
+		{
+			if (game.Players[game.Turn] == username)
+				document.title = "Flagz - Your turn!";
+			else
+				document.title = "Flagz - Game";
+		}
 	}
 
 	function getImg(i, j)
@@ -187,46 +202,44 @@ $('document').ready(function()
 	function updateBoard()
 	{
 
-		if (game.Players[game.Turn] == username && hasRival)
+		if (game.Players[game.Turn] == username || gameOver())
 		{
-			//turnSound.play();			
-			document.title = "Flagz - Your turn!";							
-			return;
+
+			$.ajax({
+				url: "/game/data",
+				type: "POST"
+			}).done(function(resp)
+			{
+				resp = JSON.parse(resp);
+				game.Players = resp.Game.Players;
+				updateHTML();
+			});
 		}
-
-		document.title = "Flagz - Game";
-
-		if (game.Score[0] >= 26 || game.Score[1] >= 26)
+		else
 		{
-			clearInterval(myInterval);
-			return;
+			$.ajax({
+				url: "/game/data", 
+				type: "POST"
+			}).done(function(resp)
+			{	
+				resp = JSON.parse(resp);
+
+				updateVariables(resp);
+
+				for (var i = 0; i < game.R; i++)
+					for (var j = 0; j < game.C; j++)
+					{
+						var img = getImg(i, j);
+						$("#"+i+"_"+j).attr("src", "../images/"+img[0]+".png");		
+						$("#"+i+"_"+j).css({'background-color' : img[1] , 'border' : img[2]});			
+					}
+
+				updateHTML();
+
+				if (gameOver())
+					endGame();
+			});
 		}
-
-		if (!canUpdate)
-			return;
-
-		$.ajax({
-			url: "/game/data", 
-			type: "POST"
-		}).done(function(resp)
-		{	
-			resp = JSON.parse(resp);
-
-			updateVariables(resp);
-
-			for (var i = 0; i < game.R; i++)
-				for (var j = 0; j < game.C; j++)
-				{
-					var img = getImg(i, j);
-					$("#"+i+"_"+j).attr("src", "../images/"+img[0]+".png");		
-					$("#"+i+"_"+j).css({'background-color' : img[1] , 'border' : img[2]});			
-				}
-
-			updateHTML();
-
-			if (game.Score[0] >= 26 || game.Score[1] >= 26)
-				gameOver();
-		});
 	}
 
 	function initBoard()
@@ -342,7 +355,7 @@ $('document').ready(function()
 	// Click on some cell
 	$("[name='cell']").click(function() 
 	{
-		if (game.Score[0] >= 26 || game.Score[1] >= 26 || game.Players[game.Turn] != username)
+		if (gameOver() || game.Players[game.Turn] != username)
 			return;
 
 		var ids = [];
@@ -415,8 +428,8 @@ $('document').ready(function()
 			game.HasBomb[myPos] = false;
 		}
 
-		if (game.Score[0] >= 26 || game.Score[1] >= 26)
-			gameOver();
+		if (gameOver())
+			endGame();
 
 		updateHTML();
 
