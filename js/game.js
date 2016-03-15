@@ -207,10 +207,10 @@ $('document').ready(function()
 
 			$.ajax({
 				url: "/game/data",
-				type: "POST"
+				type: "POST",
+				dataType: "json"
 			}).done(function(resp)
 			{
-				resp = JSON.parse(resp);
 				game.Players = resp.Game.Players;
 				updateHTML();
 			});
@@ -219,11 +219,10 @@ $('document').ready(function()
 		{
 			$.ajax({
 				url: "/game/data", 
-				type: "POST"
+				type: "POST",
+				dataType: "json"
 			}).done(function(resp)
 			{	
-				resp = JSON.parse(resp);
-
 				updateVariables(resp);
 
 				for (var i = 0; i < game.R; i++)
@@ -247,11 +246,10 @@ $('document').ready(function()
 		$.ajax({
 			url: "/game/data", 
 			type: "POST",
+			dataType: "json",
 			async: false
 		}).done(function(resp)
 		{	
-			resp = JSON.parse(resp);
-
 			username = resp.Username;
 			myPos    = (username == resp.Game.Players[0] ? 0 : 1);
 			rivalPos = (myPos == 0 ? 1 : 0);

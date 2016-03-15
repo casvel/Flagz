@@ -114,12 +114,12 @@
 }
 
 
-.btn-danger, .btn-danger:hover, .btn-danger:active
+.bomb .btn-danger, .bomb .btn-danger:hover, .bomb .btn-danger:active
 {
     background-color: transparent !important; 
 }
 
-.btn-danger
+.bomb .btn-danger
 {
     padding: 14px 15px 14px 21px !important;
 }

@@ -14,9 +14,38 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type myMux map[string]map[string]func(http.ResponseWriter, *http.Request)
+
 type myHandler struct {}
 
-type myMux map[string]map[string]func(http.ResponseWriter, *http.Request)
+type Notification struct {
+	Type string
+	Info string
+	Seen bool
+}
+
+var (
+
+	backend     httpauth.SqlAuthBackend
+	aaa         httpauth.Authorizer
+	roles       map[string]httpauth.Role
+	port        = 8009
+	backenddb   = "david:david123@tcp(127.0.0.1:3306)/flagz?parseTime=true&loc=Local"
+
+	game          map[string]*Buscaminas // player's game
+	players       map[int][2]string      // game's players
+	notifications map[string][]int       // player's notifications
+	notif         map[int]*Notification
+	privateGame   map[int]bool
+	idGame        int = 0
+	idNots	      int = 0
+	
+	mux       myMux
+	filehttp  = http.NewServeMux()
+	wshttp    = http.NewServeMux()	
+
+	connPlayer map[string]*connection
+)
 
 func (m *myMux) addRoute(path string, f func(http.ResponseWriter, *http.Request), methods []string) {
 
@@ -29,24 +58,6 @@ func (m *myMux) addRoute(path string, f func(http.ResponseWriter, *http.Request)
 	}
 }
 
-var (
-
-	backend     httpauth.SqlAuthBackend
-	aaa         httpauth.Authorizer
-	roles       map[string]httpauth.Role
-	port        = 8009
-	backenddb   = "david:david123@tcp(127.0.0.1:3306)/flagz?parseTime=true&loc=Local"
-
-	games     map[string]*Buscaminas
-	players   map[int][2]string       
-	idGame    int = 0
-	
-	mux       myMux
-	filehttp  = http.NewServeMux()
-	wshttp    = http.NewServeMux()	
-
-	connPlayer map[string]*connection
-)
 
 func main() {
 
@@ -59,9 +70,12 @@ func main() {
 	}
 	defer backend.Close()
 
-	games     = make(map[string]*Buscaminas)
-	players   = make(map[int][2]string)
-	connPlayer = make(map[string]*connection)
+	game          = make(map[string]*Buscaminas)
+	players       = make(map[int][2]string)
+	connPlayer    = make(map[string]*connection)
+	notifications = make(map[string][]int)
+	notif         = make(map[int]*Notification)
+	privateGame   = make(map[int]bool)
 
 	// create some default roles
 	roles = make(map[string]httpauth.Role)
@@ -95,6 +109,7 @@ func main() {
 	mux.addRoute("/lobby", handleLobby, []string{"GET", "POST"})
 	mux.addRoute("/lobby/games", handleLobbyGames, []string{"GET", "POST"})
 	mux.addRoute("/lobby/players", handleLobbyPlayers, []string{"GET", "POST"})
+	mux.addRoute("/lobby/challenge", handleLobbyChallenge, []string{"GET", "POST"})
 
 	mux.addRoute("/game", handleGame, []string{"GET", "POST"})
 	mux.addRoute("/game/init", handleGameInit, []string{"GET", "POST"})
@@ -102,6 +117,10 @@ func main() {
 	mux.addRoute("/game/data", handleGameData, []string{"GET", "POST"})
 	mux.addRoute("/game/joinGame", handleGameJoinGame, []string{"GET", "POST"})
 	mux.addRoute("/game/exit", handleGameExit, []string{"GET", "POST"})
+
+	mux.addRoute("/misc/notification/get", handleNotificationGet, []string{"GET", "POST"})
+	mux.addRoute("/misc/notification/reject/game", handleNotificationRejectGame, []string{"GET", "POST"})
+	mux.addRoute("/misc/notification/seen", handleNotificationSeen, []string{"GET", "POST"})
 
 	hub := newHub()
    	go hub.run()
@@ -114,6 +133,34 @@ func main() {
 	var mh *myHandler
 	go CleanLoggedUsers()
 	http.ListenAndServe(fmt.Sprintf(":%d", port), mh)
+}
+
+/******************************/
+/*         Functions          */
+/******************************/
+
+func deletePlayerFromGame(username string) {
+	
+	if _, ok := game[username]; ok == false {
+		return
+	}
+
+	thisGame := game[username]
+	gameId   := thisGame.Id
+
+	delete(game, username)
+	
+	if thisGame.Players[0] == username {
+		thisGame.Players[0] = ""
+	} else if thisGame.Players[1] == username {
+		thisGame.Players[1] = ""
+	}
+	players[gameId] = thisGame.Players
+
+	if thisGame.Players[0] == "" && thisGame.Players[1] == "" {
+		delete(players, gameId)
+		thisGame = nil
+	}
 }
 
 func CleanLoggedUsers() {
@@ -131,11 +178,35 @@ func CleanLoggedUsers() {
 	}
 }
 
+func createGame(username string) int {
+	var new_game Buscaminas
+
+	game[username] = &new_game
+	game[username].Init(16, 16, 51, username, idGame)
+	players[idGame] = [2]string{username, ""}
+	idGame++
+
+	return idGame-1
+}
+
+func addNotification(username, tipo, info string) int {
+
+	notif[idNots] = &Notification{Type:tipo, Info:info, Seen:false}
+	notifications[username] = append(notifications[username], idNots)
+
+	idNots++
+	return idNots-1
+}
+
+/******************************/
+/*           Server           */
+/******************************/
+
 func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	//fmt.Println(req.URL.Path, req.Method)
 
-	if (req.URL.Path == "/ws") {
+	if (strings.Contains(req.URL.Path, "/ws")) {
 		wshttp.ServeHTTP(rw, req)
 		return;
 	}
@@ -166,10 +237,10 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 					backend.UpdateLastSeen(user.Username)
 				}
 
-				_, ok     := games[user.Username]
+				_, ok     := game[user.Username]
 				splitPath := strings.Split(req.URL.Path, "/")
 
-				if ok && splitPath[1] != "game" && splitPath[1] != "logout" {
+				if ok && splitPath[1] != "game" && splitPath[1] != "logout" && splitPath[1] != "misc" {
 					http.Redirect(rw, req, "/game", http.StatusSeeOther)
 					return
 				}
@@ -192,6 +263,47 @@ func handleHome(rw http.ResponseWriter, req *http.Request) {
 	} else {
 		http.Redirect(rw, req, "/lobby", http.StatusSeeOther)
 	}
+}
+
+/******************************/
+/*            Misc            */
+/******************************/
+
+func handleNotificationGet(rw http.ResponseWriter, req *http.Request) {
+
+	user, _   := aaa.CurrentUser(rw, req)
+	
+	type Response struct {
+		IdNot int
+		Not   *Notification
+	}
+
+	var resp []Response
+	for _, idNot := range notifications[user.Username] {
+		resp = append(resp, Response{IdNot:idNot, Not:notif[idNot]})
+	}
+
+	respJson, _ := json.Marshal(resp)
+	rw.Write(respJson)
+}
+
+func handleNotificationRejectGame(rw http.ResponseWriter, req *http.Request) {
+
+	gameId, _ := strconv.Atoi(req.FormValue("gameId"))
+	rival     := req.FormValue("rival")
+	user, _   := aaa.CurrentUser(rw, req)
+
+	delete(privateGame, gameId)	
+
+	addNotification(rival, "reject", user.Username)
+}
+
+func handleNotificationSeen(rw http.ResponseWriter, req *http.Request) {
+
+	notId, _ := strconv.Atoi(req.FormValue("notId"))
+
+	not := notif[notId]
+	not.Seen = true
 }
 
 /******************************/
@@ -224,15 +336,18 @@ func handleLobbyGames(rw http.ResponseWriter, req *http.Request) {
 	var i int = 0
 	for gameId, usernames := range players {
 		var joinable int = 0
-		if usernames[0] == "" || usernames[1] == "" {
+		_, ok := privateGame[gameId]
+
+		if (usernames[0] == "" || usernames[1] == "") && !ok {
 			joinable = 1
 		}
+
 		resp[i] = myResp{GameId:gameId, Joinable:joinable, Players:usernames}
 		i++
 	}
 
 	respJson, _ := json.Marshal(resp)
-	fmt.Fprint(rw, string(respJson))
+	rw.Write(respJson)
 }
 
 func handleLobbyPlayers(rw http.ResponseWriter, req *http.Request) {
@@ -250,37 +365,27 @@ func handleLobbyPlayers(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	respJson, _ := json.Marshal(resp)
-	fmt.Fprint(rw, string(respJson))
+	rw.Write(respJson)
 }
 
+func handleLobbyChallenge(rw http.ResponseWriter, req *http.Request) {
+
+	var rival string = req.FormValue("rival")
+	user, _ := aaa.CurrentUser(rw, req)
+
+	if rival == user.Username {
+		return
+	}
+
+	idGame := createGame(user.Username)
+	privateGame[idGame] = true
+
+	addNotification(rival, "challenge", user.Username+"."+strconv.Itoa(idGame))
+}
 
 /******************************/
 /*           Game             */
 /******************************/
-
-func deletePlayerFromGame(username string) {
-	
-	if _, ok := games[username]; ok == false {
-		return
-	}
-
-	thisGame := games[username]
-	gameId   := thisGame.Id
-
-	delete(games, username)
-	
-	if players[gameId][0] == username {
-		thisGame.Players[0] = ""
-	} else if players[gameId][1] == username {
-		thisGame.Players[1] = ""
-	}
-	players[gameId] = thisGame.Players
-
-	if players[gameId][0] == "" && players[gameId][1] == "" {
-		delete(players, gameId)
-		thisGame = nil
-	}
-}
 
 func handleGameExit(rw http.ResponseWriter, req *http.Request) {
 
@@ -296,13 +401,20 @@ func handleGameExit(rw http.ResponseWriter, req *http.Request) {
 func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
 
 	gameId, _ := strconv.Atoi(req.FormValue("id"))
+
+	if _, ok := players[gameId]; ok == false {
+		fmt.Println("The game doesn't exist")
+		http.Redirect(rw, req, "/lobby", http.StatusSeeOther)
+		return
+	}
+
 	var versus string
 	if players[gameId][0] != "" {
 		versus = players[gameId][0]
 	} else {
 		versus = players[gameId][1]
 	}
-	thisGame  := games[versus]
+	thisGame  := game[versus]
 	user, _   := aaa.CurrentUser(rw, req)
 
 	if thisGame.Players[1] == "" {
@@ -315,8 +427,9 @@ func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	players[gameId] = thisGame.Players
+	game[user.Username] = thisGame
+	delete(privateGame, gameId)
 
-	games[user.Username] = thisGame
 	http.Redirect(rw, req, "/game", http.StatusSeeOther)
 }
 
@@ -327,18 +440,13 @@ func handleGameInit(rw http.ResponseWriter, req *http.Request) {
 		panic(err)
 	} else {
 
-		if _, ok := games[user.Username]; ok == true {
+		if _, ok := game[user.Username]; ok == true {
 			fmt.Println("It's playing already.")
 		} else {
-			var new_game Buscaminas
-
-			games[user.Username] = &new_game
-			games[user.Username].Init(16, 16, 51, user.Username, idGame)
-			players[idGame] = [2]string{user.Username, ""}
-			idGame++
+			createGame(user.Username)
 			
 			fmt.Println("Game created.")
-			games[user.Username].PrintBoard()
+			game[user.Username].PrintBoard()
 		}
 
 		http.Redirect(rw, req, "/game", http.StatusSeeOther)
@@ -372,7 +480,7 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 
-	thisGame := games[user.Username]
+	thisGame := game[user.Username]
 
 	req.ParseForm()
 
@@ -402,12 +510,12 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 
-	if _, ok := games[user.Username]; ok == false {
+	if _, ok := game[user.Username]; ok == false {
 		fmt.Println("The user has no game.")
 		return
 	}
 
-	thisGame     := games[user.Username]
+	thisGame     := game[user.Username]
 
 	type Response struct {
 
@@ -418,7 +526,7 @@ func handleGameData(rw http.ResponseWriter, req *http.Request) {
 	resp := Response{Game: *thisGame, Username: user.Username}
 	respJson, _ := json.Marshal(resp)
 
-	fmt.Fprint(rw, string(respJson))
+	rw.Write(respJson)
 }
 
 /******************************/

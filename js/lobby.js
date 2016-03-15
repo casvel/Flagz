@@ -1,7 +1,11 @@
 $(document).ready(function(){
 
+	/***** Variables *****/
 	var oldURL = document.referrer;
+	var lobbyInterval;
+	/***** END Variables *****/
 
+	/***** Main *****/
 	if (oldURL.split("/").pop().indexOf("login") == -1)
 		$("#successLogin").alert('close');
 	else
@@ -12,8 +16,11 @@ $(document).ready(function(){
 	}
 
 	UpdateLobby();
-	var myInterval = setInterval(UpdateLobby, 5000);
+	lobbyInterval = setInterval(UpdateLobby, 1000);
+	/***** END Main *****/
 
+
+	/***** Functions *****/
 	function UpdateLobby()
 	{
 		$.ajax({
@@ -22,8 +29,6 @@ $(document).ready(function(){
 		}).done(function(resp)
 		{
 			resp = JSON.parse(resp);
-
-			//console.log(resp);
 
 			var myList = "";
 			for (var i = 0; i < resp.length; i++)
@@ -51,13 +56,41 @@ $(document).ready(function(){
 			for (var i = 0; i < resp.length; i++)
 			{
 				myList += "<tr class='info'>";
-				myList += "<td>"+resp[i].Username+"</td>";
+				myList += "<td><a name='player'>"+resp[i].Username+"</a></td>";
 				myList += "</tr>";
 			}
 
 			$("#listPlayers").html(myList);
 		});
 	}
+	/***** END Functions *****/
 
 
+	/***** Events *****/
+	$("body").on("click", "[name='player']", function()
+	{
+		var playerUsername = $(this).html();
+		$("#modal-player .modal-title").html(playerUsername);
+		$("#modal-player").modal();
+
+		if (username == playerUsername)
+			$("#btn-challenge").hide();
+		else
+			$("#btn-challenge").show();
+	});
+
+	$("#btn-challenge").click(function()
+	{
+		var playerUsername = $("#modal-player .modal-title").html();
+		clearInterval(lobbyInterval);
+
+		$.ajax({
+			url: "/lobby/challenge",
+			type: "POST",
+			data: {rival: playerUsername}
+		}).done(function(){
+			window.location.href = "/game";
+		});
+	});
+	/***** END Events *****/
 });

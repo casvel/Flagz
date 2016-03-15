@@ -23,7 +23,7 @@ func (c *connection) reader() {
 			break
 		}
 		username := c.h.connections[c]
-		thisGame  := games[username]
+		thisGame  := game[username]
 		var rival string
 		if thisGame.Players[0] == username {
      			rival = thisGame.Players[1]
@@ -55,15 +55,19 @@ type wsHandler struct {
 }
 
 func (wsh wsHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+
 	user, _ := aaa.CurrentUser(rw, req) 
 	ws, err := upgrader.Upgrade(rw, req, nil)	
+
 	if err != nil {
 		return
-	}	
+	}
+
 	c := &connection{send: make(chan []byte, 256), ws: ws, h: wsh.h}		
 	connPlayer[user.Username] = c	
 	c.h.connections[c] = user.Username
 	defer func() { c.h.unregister <- c }()
+	
 	go c.writer()
 	c.reader()
 }
