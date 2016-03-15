@@ -139,11 +139,30 @@ func main() {
 /*         Functions          */
 /******************************/
 
+func sendCommand(command, username string) {
+	
+	thisGame := game[username]
+
+	var rival string
+	if thisGame.Players[0] == username {
+		rival = thisGame.Players[1]
+	} else {
+		rival = thisGame.Players[0]
+	}
+
+	conn, ok := connPlayer[rival]
+	if ok {
+		conn.send <- []byte("\\move")
+	}
+}
+
 func deletePlayerFromGame(username string) {
 	
 	if _, ok := game[username]; ok == false {
 		return
 	}
+
+	sendCommand("\\exit", username)
 
 	thisGame := game[username]
 	gameId   := thisGame.Id
@@ -240,7 +259,7 @@ func (*myHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				_, ok     := game[user.Username]
 				splitPath := strings.Split(req.URL.Path, "/")
 
-				if ok && splitPath[1] != "game" && splitPath[1] != "logout" && splitPath[1] != "misc" {
+				if ok && splitPath[1] != "game" && (splitPath[1] == "lobby" || splitPath[1] == "login") {
 					http.Redirect(rw, req, "/game", http.StatusSeeOther)
 					return
 				}
@@ -430,6 +449,7 @@ func handleGameJoinGame(rw http.ResponseWriter, req *http.Request) {
 	game[user.Username] = thisGame
 	delete(privateGame, gameId)
 
+	sendCommand("\\join", user.Username)
 	http.Redirect(rw, req, "/game", http.StatusSeeOther)
 }
 
@@ -501,6 +521,7 @@ func handleGameMove(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	thisGame.Move(coord, usedBomb, int16(lastX), int16(lastY))
+	sendCommand("\\move", user.Username)
 }
 
 func handleGameData(rw http.ResponseWriter, req *http.Request) {

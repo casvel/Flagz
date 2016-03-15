@@ -24,7 +24,15 @@ $('document').ready(function()
         }
         conn.onmessage = function(evt) 
         {                
-            appendLog($("<p/>").text(evt.data))
+            var command = evt.data.substring(0, 5);
+            if (command == "\\move" || command == "\\join" || command == "\\exit")
+            {
+                updateBoard();
+                return;
+            }
+
+
+            appendLog($("<p/>").text(evt.data));
             msgSound.play();
             if( chatbody.css('display') == 'none' && !c)
             {

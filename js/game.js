@@ -7,12 +7,11 @@ $('document').ready(function()
 	var username;
 	var myPos, rivalPos;	
 	
-	var canUpdate = true;
 	var hasRival = false;
 	var bombActive = false;
 	var xhover = -10, yhover = -10;
 
-	var myInterval = setInterval(updateBoard, 1000);	
+	//var myInterval = setInterval(updateBoard, 1000);	
 	/***** END Variables *****/
 
 	/***** "main" *****/
@@ -199,7 +198,7 @@ $('document').ready(function()
 		return [img, bgcolor, bcolor];
 	}
 
-	function updateBoard()
+	updateBoard = function()
 	{
 
 		if (game.Players[game.Turn] == username || gameOver())
@@ -393,8 +392,6 @@ $('document').ready(function()
 		if (!ok)
 			return;
 
-		canUpdate = false;
-
 		var lastX = game.LastX, lastY = game.LastY;
 		game.LastX = id[0];
 		game.LastY = id[1];
@@ -430,8 +427,6 @@ $('document').ready(function()
 			endGame();
 
 		updateHTML();
-
-		canUpdate = true;
 	});
 
 	// Hover some cell
